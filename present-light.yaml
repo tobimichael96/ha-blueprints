@@ -92,16 +92,12 @@ triggers:
 actions:
   - choose:
       - conditions:
+          - condition: state
+            entity_id: !input occupied_binary_sensor
+            state: "on"
           - condition: or
-            conditions:
-              - !input condition_on_or
-              - condition: and
-                conditions:
-                  - condition: state
-                    entity_id: !input occupied_binary_sensor
-                    state: "on"
-                  - condition: and
-                    conditions: !input condition_on_and
+            conditions: !input condition_on_or
+          - condition: !input condition_on_and
         sequence:
           - if:
               - condition: !input additional_action_condition
