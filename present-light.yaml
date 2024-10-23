@@ -45,9 +45,17 @@ blueprint:
             domain: switch
     guest_mode_binary_sensor:
       name: Sensor that indicates if guest mode is on
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
     home_sensor:
       name: Sensor that indicates if persons are home
       default: zone.home
+      selector:
+        entity:
+          filter:
+            - domain: sensor
 
 mode: restart
 
