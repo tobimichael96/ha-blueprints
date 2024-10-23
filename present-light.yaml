@@ -18,6 +18,7 @@ blueprint:
         entity:
           filter:
             - domain: sensor
+              device_class: illuminance
     illuminance_sensor_enabled:
       name: Illuminance Sensor Enabled
       description: Whether to check the an illuminance sensor or not.
@@ -134,7 +135,6 @@ actions:
                 entity_id: !input guest_mode_binary_sensor
                 state: "on"
               - condition: numeric_state
-                enabled: !input illuminance_sensor_enabled
                 entity_id: !input home_sensor
                 above: 0
             alias: Home or Guest-Mode
@@ -145,6 +145,7 @@ actions:
                 entity_id: !input occupied_binary_sensor
                 state: "on"
               - condition: numeric_state
+                enabled: !input illuminance_sensor_enabled
                 entity_id: !input illuminance_sensor
                 below: !input illuminance_sensor_below
             alias: Occupied and light below threshold
