@@ -94,13 +94,13 @@ actions:
       - conditions:
           - condition: or
             conditions:
-              - !input condition_on_or
+              - conditions: !input condition_on_or
               - condition: and
                 conditions:
                   - condition: state
                     entity_id: !input occupied_binary_sensor
                     state: "on"
-                  - !input condition_on_and
+                  - conditions: !input condition_on_and
         sequence:
           - if:
               - condition: !input additional_action_condition
