@@ -82,7 +82,7 @@ actions:
           - condition: and
             conditions: !input condition_on
         sequence:
-          - sequence: !input additional_actions
+          - sequence: !input additional_actions_on
           - action: switch.turn_on
             target: !input switch_target
       - conditions:
@@ -97,4 +97,4 @@ actions:
           - delay: !input no_occupancy_wait
           - action: switch.turn_off
             target: !input switch_target
-          - sequence: !input additional_actions
+          - sequence: !input additional_actions_off
