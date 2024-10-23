@@ -19,12 +19,22 @@ blueprint:
           filter:
             - domain: sensor
               device_class: illuminance
-    illuminance_sensor_enabled:
-      name: Illuminance Sensor Enabled
-      description: Whether to check the an illuminance sensor or not.
-      default: true
+    illuminance_condition_below:
+      name: Illuminance Condition Below
+      description: Threshold for turning on the light.
+      default:
+        condition: numeric_state
+        entity_id: !input illuminance_sensor
       selector:
-        boolean:
+        condition:
+    illuminance_condition_above:
+      name: Illuminance Condition Above
+      description: Threshold for turning on the light.
+      default:
+        condition: numeric_state
+        entity_id: !input illuminance_sensor
+      selector:
+        condition:
     no_occupancy_wait:
       name: Wait time
       description: Wait time for turning off the light/switch.
@@ -34,24 +44,6 @@ blueprint:
           min: 0
           max: 300
           unit_of_measurement: seconds
-    illuminance_sensor_below:
-      name: Illuminance Below
-      description: Threshold for turning on the light.
-      default: 50
-      selector:
-        number:
-          min: 0
-          max: 1000
-          unit_of_measurement: lx
-    illuminance_sensor_above:
-      name: Illuminance Above
-      description: Threshold for turning off the light.
-      default: 100
-      selector:
-        number:
-          min: 0
-          max: 1000
-          unit_of_measurement: lx
     light_target:
       name: Light Target
       description: Light that should be turned on/off.
@@ -144,10 +136,7 @@ actions:
               - condition: state
                 entity_id: !input occupied_binary_sensor
                 state: "on"
-              - condition: numeric_state
-                enabled: !input illuminance_sensor_enabled
-                entity_id: !input illuminance_sensor
-                below: !input illuminance_sensor_below
+              - condition: !input illuminance_condition_below
             alias: Occupied and light below threshold
         sequence:
           - if:
@@ -167,10 +156,7 @@ actions:
               - condition: state
                 entity_id: !input occupied_binary_sensor
                 state: "off"
-              - condition: numeric_state
-                enabled: !input illuminance_sensor_enabled
-                entity_id: !input illuminance_sensor
-                above: !input illuminance_sensor_above
+              - condition: !input illuminance_condition_above
             alias: Not occupied or light above threshold
         sequence:
           - delay: !input no_occupancy_wait
