@@ -10,6 +10,15 @@ blueprint:
         entity:
           filter:
             - domain: binary_sensor
+    illuminance_sensor:
+      name: Illuminance Sensor
+      description: Sensor that indicates the light.
+      default:
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+              device_class: illuminance
     illuminance_condition_below:
       name: Illuminance Condition Below
       description: Threshold for turning on the light.
