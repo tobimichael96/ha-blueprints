@@ -97,7 +97,8 @@ actions:
             state: "on"
           - condition: or
             conditions: !input condition_on_or
-          - condition: !input condition_on_and
+          - condition: and
+            conditions: !input condition_on_and
         sequence:
           - if:
               - condition: !input additional_action_condition
@@ -116,7 +117,8 @@ actions:
               - condition: state
                 entity_id: !input occupied_binary_sensor
                 state: "off"
-              - condition: !input condition_off
+              - condition: or
+                conditions: !input condition_off
         sequence:
           - delay: !input no_occupancy_wait
           - action: switch.turn_off
