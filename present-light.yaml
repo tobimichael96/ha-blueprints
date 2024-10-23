@@ -13,7 +13,6 @@ blueprint:
     illuminance_sensor:
       name: Illuminance Sensor
       description: Sensor that indicates the light.
-      default:
       selector:
         entity:
           filter:
