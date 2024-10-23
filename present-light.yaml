@@ -37,31 +37,15 @@ blueprint:
           min: 0
           max: 300
           unit_of_measurement: seconds
-    light_target:
-      name: Light Target
-      description: Light that should be turned on/off.
-      default: { }
-      selector:
-        target:
-          entity:
-            domain: light
-    switch_target:
-      name: Switch Target
-      description: Switch that should be turned on/off.
-      default: { }
-      selector:
-        target:
-          entity:
-            domain: switch
-    additional_actions_on:
-      name: Additional Actions On
-      description: Additional actions which should run when devices are turned on.
+    actions_on:
+      name: Actions On
+      description: Actions which should run when devices are turned on.
       default: [ ]
       selector:
         action:
-    additional_actions_off:
-      name: Additional Actions Off
-      description: Additional actions which should run when devices are turned off.
+    actions_off:
+      name: Actions Off
+      description: Actions which should run when devices are turned off.
       default: [ ]
       selector:
         action:
@@ -81,10 +65,7 @@ actions:
             state: "on"
           - condition: and
             conditions: !input condition_on
-        sequence:
-          - sequence: !input additional_actions_on
-          - action: switch.turn_on
-            target: !input switch_target
+        sequence: !input actions_on
       - conditions:
           - condition: or
             conditions:
@@ -95,6 +76,4 @@ actions:
                 conditions: !input condition_off
         sequence:
           - delay: !input no_occupancy_wait
-          - action: switch.turn_off
-            target: !input switch_target
-          - sequence: !input additional_actions_off
+          - sequence: !input actions_off
