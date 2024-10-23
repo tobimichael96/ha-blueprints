@@ -1,18 +1,18 @@
 blueprint:
   name: Present Light
-  description: Turn a light/plug on and off based on detected presents/motion
+  description: Turn a light/plug on and off based on detected presents/motion.
   domain: automation
   input:
     occupied_binary_sensor:
       name: Occupied Sensor
-      description: Sensor that indicates if the room is occupied
+      description: Sensor that indicates if the room is occupied.
       selector:
         entity:
           filter:
             - domain: binary_sensor
     illuminance_sensor:
       name: Illuminance Sensor
-      description: Sensor that indicates the light
+      description: Sensor that indicates the light.
       selector:
         entity:
           filter:
@@ -28,7 +28,7 @@ blueprint:
           unit_of_measurement: seconds
     illuminance_sensor_below:
       name: Illuminance Below
-      description: Threshold for turning on the light
+      description: Threshold for turning on the light.
       default: 50
       selector:
         number:
@@ -37,7 +37,7 @@ blueprint:
           unit_of_measurement: lx
     illuminance_sensor_above:
       name: Illuminance Above
-      description: Threshold for turning off the light
+      description: Threshold for turning off the light.
       default: 100
       selector:
         number:
@@ -46,23 +46,50 @@ blueprint:
           unit_of_measurement: lx
     light_target:
       name: Light Target
-      description: Light that should be turned on/off
-      default: {}
+      description: Light that should be turned on/off.
+      default: { }
       selector:
         target:
           entity:
             domain: light
     switch_target:
       name: Switch Target
-      description: Switch that should be turned on/off
-      default: {}
+      description: Switch that should be turned on/off.
+      default: { }
       selector:
         target:
           entity:
             domain: switch
+    additional_action_condition:
+      name: Additional Action Condition
+      description: Conditions for additional turn on of devices.
+      selector:
+        condition:
+    additional_light_target:
+      name: Additional Light Target
+      description: Light that should be turned on/off additionally.
+      default: { }
+      selector:
+        target:
+          entity:
+            domain: light
+    additional_switch_target:
+      name: Additional Switch Target
+      description: Switch that should be turned on/off additionally.
+      default: { }
+      selector:
+        target:
+          entity:
+            domain: switch
+    home_or_guest_required:
+      name: Enable Home or Guest
+      description: Should the Home and Guest sensor be checked?
+      default: true
+      selector:
+        boolean:
     guest_mode_binary_sensor:
       name: Guest Mode Sensor
-      description: Sensor that indicates if guest mode is on
+      description: Sensor that indicates if guest mode is on.
       selector:
         entity:
           filter:
@@ -71,7 +98,7 @@ blueprint:
                 - switch
     home_sensor:
       name: Home Sensor
-      description: Sensor that indicates if persons are home
+      description: Sensor that indicates if persons are home.
       default: zone.home
       selector:
         entity:
@@ -103,6 +130,7 @@ actions:
                 above: 0
             alias: Home or Guest-Mode
           - condition: and
+            enabled: !input home_or_guest_required
             conditions:
               - condition: state
                 entity_id: !input occupied_binary_sensor
@@ -112,6 +140,13 @@ actions:
                 below: !input illuminance_sensor_below
             alias: Occupied and light below threshold
         sequence:
+          - if:
+              - condition: !input additional_action_condition
+            then:
+              - action: switch.turn_on
+                target: !input additional_switch_target
+              - action: light.turn_on
+                target: !input additional_light_target
           - action: switch.turn_on
             target: !input switch_target
           - action: light.turn_on
@@ -132,3 +167,7 @@ actions:
             target: !input switch_target
           - action: light.turn_off
             target: !input light_target
+          - action: switch.turn_off
+            target: !input additional_switch_target
+          - action: light.turn_off
+            target: !input additional_light_target
