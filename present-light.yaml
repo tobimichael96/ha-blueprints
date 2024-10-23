@@ -53,28 +53,18 @@ blueprint:
         target:
           entity:
             domain: switch
-    additional_action_condition:
-      name: Additional Action Condition
-      description: Conditions for additional turn on of devices.
+    additional_actions_on:
+      name: Additional Actions On
+      description: Additional actions which should run when devices are turned on.
       default: [ ]
       selector:
-        condition:
-    additional_light_target:
-      name: Additional Light Target
-      description: Light that should be turned on/off additionally.
-      default: { }
+        action:
+    additional_actions_off:
+      name: Additional Actions Off
+      description: Additional actions which should run when devices are turned off.
+      default: [ ]
       selector:
-        target:
-          entity:
-            domain: light
-    additional_switch_target:
-      name: Additional Switch Target
-      description: Switch that should be turned on/off additionally.
-      default: { }
-      selector:
-        target:
-          entity:
-            domain: switch
+        action:
 
 mode: restart
 
@@ -92,17 +82,9 @@ actions:
           - condition: and
             conditions: !input condition_on
         sequence:
-          - if:
-              - condition: !input additional_action_condition
-            then:
-              - action: switch.turn_on
-                target: !input additional_switch_target
-              - action: light.turn_on
-                target: !input additional_light_target
+          - sequence: !input additional_actions
           - action: switch.turn_on
             target: !input switch_target
-          - action: light.turn_on
-            target: !input light_target
       - conditions:
           - condition: or
             conditions:
@@ -115,9 +97,4 @@ actions:
           - delay: !input no_occupancy_wait
           - action: switch.turn_off
             target: !input switch_target
-          - action: light.turn_off
-            target: !input light_target
-          - action: switch.turn_off
-            target: !input additional_switch_target
-          - action: light.turn_off
-            target: !input additional_light_target
+          - sequence: !input additional_actions
