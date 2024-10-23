@@ -13,7 +13,7 @@ blueprint:
     additional_trigger:
       name: Additional Trigger
       description: Additional Triggers can be configured here. For example checking a light sensor.
-      default: [ ]
+      default:
       selector:
         trigger:
     illuminance_condition_below:
