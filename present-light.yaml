@@ -108,7 +108,7 @@ mode: restart
 triggers:
   - trigger: state
     entity_id: !input occupied_binary_sensor
-  - trigger: !input additional_trigger
+  - !input additional_trigger
 
 actions:
   - choose:
