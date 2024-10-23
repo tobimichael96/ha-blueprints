@@ -16,15 +16,21 @@ blueprint:
       default:
       selector:
         trigger:
-    condition_on:
-      name: Condition On
-      description: Additional conditions for turning on the devices.
+    condition_on_and:
+      name: Condition On And
+      description: Additional conditions for turning on the devices. This condition is always AND.
+      default: [ ]
+      selector:
+        condition:
+    condition_on_or:
+      name: Condition On Or
+      description: Additional conditions for turning on the devices. This condition is always OR.
       default: [ ]
       selector:
         condition:
     condition_off:
       name: Condition Off
-      description: Additional conditions for turning off the devices.
+      description: Additional conditions for turning off the devices. This condition is always OR.
       default: [ ]
       selector:
         condition:
@@ -75,29 +81,6 @@ blueprint:
         target:
           entity:
             domain: switch
-    home_or_guest_required:
-      name: Enable Home or Guest
-      description: Should the Home and Guest sensor be checked?
-      default: true
-      selector:
-        boolean:
-    guest_mode_binary_sensor:
-      name: Guest Mode Sensor
-      description: Sensor that indicates if guest mode is on.
-      selector:
-        entity:
-          filter:
-            - domain:
-                - binary_sensor
-                - switch
-    home_sensor:
-      name: Home Sensor
-      description: Sensor that indicates if persons are home.
-      default: zone.home
-      selector:
-        entity:
-          filter:
-            - domain: sensor
 
 mode: restart
 
@@ -111,20 +94,13 @@ actions:
       - conditions:
           - condition: or
             conditions:
-              - condition: state
-                entity_id: !input guest_mode_binary_sensor
-                state: "on"
-              - condition: numeric_state
-                entity_id: !input home_sensor
-                above: 0
-            alias: Home or Guest-Mode
-          - condition: and
-            enabled: !input home_or_guest_required
-            conditions:
-              - condition: state
-                entity_id: !input occupied_binary_sensor
-                state: "on"
-              - condition: !input condition_on
+              - condition: !input condition_on_or
+              - condition: and
+                conditions:
+                  - condition: state
+                    entity_id: !input occupied_binary_sensor
+                    state: "on"
+                  - condition: !input condition_on_and
         sequence:
           - if:
               - condition: !input additional_action_condition
