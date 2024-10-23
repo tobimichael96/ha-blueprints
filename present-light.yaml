@@ -33,12 +33,14 @@ blueprint:
           unit_of_measurement: lx
     light_target:
       name: Light that should be turned on/off
+      default: []
       selector:
         target:
           entity:
             domain: light
     switch_target:
       name: Switch that should be turned on/off
+      default: []
       selector:
         target:
           entity:
