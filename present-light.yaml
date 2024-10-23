@@ -1,0 +1,96 @@
+blueprint:
+  name: Present Light
+  description: Turn a light/plug on based on detected presents/motion
+  domain: automation
+  input:
+    occupied_binary_sensor:
+      name: Sensor that indicates if the room is occupied
+    illuminance_sensor:
+      name: Sensor that indicates the light
+    illuminance_sensor_below:
+      name: Threshold for turning on the light
+      default: 50
+      selector:
+        number:
+          min: 0
+          max: 1000
+          unit_of_measurement: lx
+    illuminance_sensor_above:
+      name: Threshold for turning off the light
+      default: 100
+      selector:
+        number:
+          min: 0
+          max: 1000
+          unit_of_measurement: lx
+    light_target:
+      name: Light that should be turned on/off
+      selector:
+        target:
+          entity:
+            domain: light
+    switch_target:
+      name: Switch that should be turned on/off
+      selector:
+        target:
+          entity:
+            domain: switch
+    guest_mode_binary_sensor:
+      name: Sensor that indicates if guest mode is on
+    home_sensor:
+      name: Sensor that indicates if persons are home
+      default: zone.home
+
+mode: restart
+
+triggers:
+  - trigger: state
+    entity_id: !input occupied_binary_sensor
+  - trigger: state
+    entity_id: !input illuminance_sensor
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 30
+
+actions:
+  - choose:
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: !input guest_mode_binary_sensor
+                state: "on"
+              - condition: numeric_state
+                entity_id: !input home_sensor
+                above: 0
+            alias: Home or Guest-Mode
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: !input occupied_binary_sensor
+                state: "on"
+              - condition: numeric_state
+                entity_id: !input illuminance_sensor
+                below: !input illuminance_sensor_below
+            alias: Occupied and light below threshold
+        sequence:
+          - action: switch.turn_on
+            target: !input switch_target
+          - action: light.turn_on
+            target: !input light_target
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: !input occupied_binary_sensor
+                state: "off"
+              - condition: numeric_state
+                entity_id: !input illuminance_sensor
+                above: !input illuminance_sensor_above
+            alias: Not occupied or light above threshold
+        sequence:
+          - action: switch.turn_off
+            target: !input switch_target
+          - action: light.turn_off
+            target: !input light_target
