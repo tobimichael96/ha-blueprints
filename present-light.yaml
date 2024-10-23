@@ -16,21 +16,15 @@ blueprint:
       default:
       selector:
         trigger:
-    condition_on_and:
-      name: Condition On And
-      description: Additional conditions for turning on the devices. This condition is always AND.
-      default: [ ]
-      selector:
-        condition:
-    condition_on_or:
-      name: Condition On Or
-      description: Additional conditions for turning on the devices. This condition is always OR.
+    condition_on:
+      name: Condition On
+      description: Additional conditions for turning on the devices.
       default: [ ]
       selector:
         condition:
     condition_off:
       name: Condition Off
-      description: Additional conditions for turning off the devices. This condition is always OR.
+      description: Additional conditions for turning off the devices.
       default: [ ]
       selector:
         condition:
@@ -95,10 +89,8 @@ actions:
           - condition: state
             entity_id: !input occupied_binary_sensor
             state: "on"
-          - condition: or
-            conditions: !input condition_on_or
           - condition: and
-            conditions: !input condition_on_and
+            conditions: !input condition_on
         sequence:
           - if:
               - condition: !input additional_action_condition
