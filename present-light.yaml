@@ -16,15 +16,15 @@ blueprint:
       default:
       selector:
         trigger:
-    illuminance_condition_below:
-      name: Illuminance Condition Below
-      description: Threshold for turning on the devices.
+    condition_on:
+      name: Condition On
+      description: Additional conditions for turning on the devices.
       default: [ ]
       selector:
         condition:
-    illuminance_condition_above:
-      name: Illuminance Condition Above
-      description: Threshold for turning off the devices.
+    condition_off:
+      name: Condition Off
+      description: Additional conditions for turning off the devices.
       default: [ ]
       selector:
         condition:
@@ -124,8 +124,7 @@ actions:
               - condition: state
                 entity_id: !input occupied_binary_sensor
                 state: "on"
-              - condition: !input illuminance_condition_below
-            alias: Occupied and light below threshold
+              - condition: !input condition_on
         sequence:
           - if:
               - condition: !input additional_action_condition
@@ -144,8 +143,7 @@ actions:
               - condition: state
                 entity_id: !input occupied_binary_sensor
                 state: "off"
-              - condition: !input illuminance_condition_above
-            alias: Not occupied or light above threshold
+              - condition: !input condition_off
         sequence:
           - delay: !input no_occupancy_wait
           - action: switch.turn_off
