@@ -19,17 +19,13 @@ blueprint:
     illuminance_condition_below:
       name: Illuminance Condition Below
       description: Threshold for turning on the devices.
-      default:
-        condition: numeric_state
-        below: 50
+      default: [ ]
       selector:
         condition:
     illuminance_condition_above:
       name: Illuminance Condition Above
       description: Threshold for turning off the devices.
-      default:
-        condition: numeric_state
-        above: 100
+      default: [ ]
       selector:
         condition:
     no_occupancy_wait:
