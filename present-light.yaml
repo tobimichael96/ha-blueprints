@@ -48,8 +48,9 @@ blueprint:
       selector:
         entity:
           filter:
-            - domain: binary_sensor
-            - domain: switch
+            - domain:
+                - binary_sensor
+                - switch
     home_sensor:
       name: Sensor that indicates if persons are home
       default: zone.home
