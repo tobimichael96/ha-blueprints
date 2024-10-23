@@ -4,19 +4,31 @@ blueprint:
   domain: automation
   input:
     occupied_binary_sensor:
-      name: Sensor that indicates if the room is occupied
+      name: Occupied Sensor
+      description: Sensor that indicates if the room is occupied
       selector:
         entity:
           filter:
             - domain: binary_sensor
     illuminance_sensor:
-      name: Sensor that indicates the light
+      name: Illuminance Sensor
+      description: Sensor that indicates the light
       selector:
         entity:
           filter:
             - domain: sensor
+    no_occupancy_wait:
+      name: Wait time
+      description: Wait time for turning off the light/switch.
+      default: 0
+      selector:
+        number:
+          min: 0
+          max: 3600
+          unit_of_measurement: seconds
     illuminance_sensor_below:
-      name: Threshold for turning on the light
+      name: Illuminance Below
+      description: Threshold for turning on the light
       default: 50
       selector:
         number:
@@ -24,7 +36,8 @@ blueprint:
           max: 1000
           unit_of_measurement: lx
     illuminance_sensor_above:
-      name: Threshold for turning off the light
+      name: Illuminance Above
+      description: Threshold for turning off the light
       default: 100
       selector:
         number:
@@ -32,21 +45,24 @@ blueprint:
           max: 1000
           unit_of_measurement: lx
     light_target:
-      name: Light that should be turned on/off
+      name: Light Target
+      description: Light that should be turned on/off
       default: {}
       selector:
         target:
           entity:
             domain: light
     switch_target:
-      name: Switch that should be turned on/off
+      name: Switch Target
+      description: Switch that should be turned on/off
       default: {}
       selector:
         target:
           entity:
             domain: switch
     guest_mode_binary_sensor:
-      name: Sensor that indicates if guest mode is on
+      name: Guest Mode Sensor
+      description: Sensor that indicates if guest mode is on
       selector:
         entity:
           filter:
@@ -54,7 +70,8 @@ blueprint:
                 - binary_sensor
                 - switch
     home_sensor:
-      name: Sensor that indicates if persons are home
+      name: Home Sensor
+      description: Sensor that indicates if persons are home
       default: zone.home
       selector:
         entity:
@@ -110,6 +127,7 @@ actions:
                 above: !input illuminance_sensor_above
             alias: Not occupied or light above threshold
         sequence:
+          - delay: !input no_occupancy_wait
           - action: switch.turn_off
             target: !input switch_target
           - action: light.turn_off
