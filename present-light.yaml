@@ -63,6 +63,7 @@ blueprint:
     additional_action_condition:
       name: Additional Action Condition
       description: Conditions for additional turn on of devices.
+      default: { }
       selector:
         condition:
     additional_light_target:
