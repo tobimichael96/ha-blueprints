@@ -1,6 +1,6 @@
 blueprint:
   name: Present Light
-  description: Turn a light/plug on based on detected presents/motion
+  description: Turn a light/plug on and off based on detected presents/motion
   domain: automation
   input:
     occupied_binary_sensor:
