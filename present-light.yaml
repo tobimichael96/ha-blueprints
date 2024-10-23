@@ -5,8 +5,16 @@ blueprint:
   input:
     occupied_binary_sensor:
       name: Sensor that indicates if the room is occupied
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
     illuminance_sensor:
       name: Sensor that indicates the light
+      selector:
+        entity:
+          filter:
+            - domain: sensor
     illuminance_sensor_below:
       name: Threshold for turning on the light
       default: 50
