@@ -10,15 +10,12 @@ blueprint:
         entity:
           filter:
             - domain: binary_sensor
-    illuminance_sensor:
-      name: Illuminance Sensor
-      description: Sensor that indicates the light.
-      default: ""
+    additional_trigger:
+      name: Additional Trigger
+      description: Additional Triggers can be configured here. For example checking a light sensor.
+      default: [ ]
       selector:
-        entity:
-          filter:
-            - domain: sensor
-              device_class: illuminance
+        trigger:
     illuminance_condition_below:
       name: Illuminance Condition Below
       description: Threshold for turning on the devices.
@@ -63,7 +60,7 @@ blueprint:
     additional_action_condition:
       name: Additional Action Condition
       description: Conditions for additional turn on of devices.
-      default: []
+      default: [ ]
       selector:
         condition:
     additional_light_target:
@@ -111,12 +108,7 @@ mode: restart
 triggers:
   - trigger: state
     entity_id: !input occupied_binary_sensor
-  - trigger: state
-    entity_id: !input illuminance_sensor
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 30
+  - trigger: !input additional_trigger
 
 actions:
   - choose:
