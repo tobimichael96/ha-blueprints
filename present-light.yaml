@@ -24,7 +24,7 @@ blueprint:
       selector:
         number:
           min: 0
-          max: 3600
+          max: 300
           unit_of_measurement: seconds
     illuminance_sensor_below:
       name: Illuminance Below
