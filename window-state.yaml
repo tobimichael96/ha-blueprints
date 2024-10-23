@@ -1,0 +1,100 @@
+blueprint:
+  name: Window State
+  description: Update the state of a window depending on the state of the door-sensors.
+  domain: automation
+  input:
+    upper_door_sensor:
+      name: Upper Door Sensor
+      description: Sensor that is on the top of the window.
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+    lower_door_sensor:
+      name: Lower Door Sensor
+      description: Sensor that is on the bottom of the window.
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+    window_entity:
+      name: Window Entity
+      description: Window entity that should be updated.
+      selector:
+        entity:
+          filter:
+            - domain: input_select
+
+mode: queued
+max: 5
+
+triggers:
+  - entity_id:
+      - !input lower_door_sensor
+    id: window_open
+    to: "on"
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 2
+    trigger: state
+  - entity_id:
+      - !input upper_door_sensor
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 2
+    to: "off"
+    id: window_closed
+    trigger: state
+  - entity_id:
+      - !input upper_door_sensor
+      - !input lower_door_sensor
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 2
+    trigger: state
+
+actions:
+  - if:
+      - condition: trigger
+        id: window_closed
+    then:
+      - data:
+          option: Closed
+        target:
+          entity_id: !input window_entity
+        action: input_select.select_option
+  - if:
+      - condition: or
+        conditions:
+          - condition: trigger
+            id: window_open
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: !input upper_door_sensor
+                state: "on"
+              - condition: state
+                entity_id: !input lower_door_sensor
+                state: "on"
+    then:
+      - data:
+          option: Open
+        target:
+          entity_id: !input window_entity
+        action: input_select.select_option
+  - if:
+      - condition: state
+        entity_id: !input lower_door_sensor
+        state: "off"
+      - condition: state
+        entity_id: !input upper_door_sensor
+        state: "on"
+    then:
+      - data:
+          option: Tilted
+        target:
+          entity_id: !input window_entity
+        action: input_select.select_option
