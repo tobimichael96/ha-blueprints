@@ -18,20 +18,22 @@ blueprint:
         trigger:
     condition_on:
       name: Condition On
-      description: Additional AND conditions for turning on the devices.
-      default: [ ]
-      selector:
-        condition:
-    condition_on_or:
-      name: Condition On Or
-      description: Additional OR conditions for turning on the devices.
-      default: [ ]
+      description: Additional conditions for turning on the devices.
+      default:
+        - condition: state
+          entity_id: !input occupied_binary_sensor
+          state: "on"
       selector:
         condition:
     condition_off:
       name: Condition Off
       description: Additional conditions for turning off the devices.
-      default: [ ]
+      default:
+        - condition: or
+          conditions:
+            - condition: state
+              entity_id: !input occupied_binary_sensor
+              state: "off"
       selector:
         condition:
     no_occupancy_wait:
@@ -65,26 +67,9 @@ triggers:
 
 actions:
   - choose:
-      - conditions:
-          - condition: or
-            conditions:
-              - condition: and
-                conditions:
-                  - condition: state
-                    entity_id: !input occupied_binary_sensor
-                    state: "on"
-                  - condition: and
-                    conditions: !input condition_on
-              - conditions: !input condition_on_or
+      - conditions: !input condition_on
         sequence: !input actions_on
-      - conditions:
-          - condition: or
-            conditions:
-              - condition: state
-                entity_id: !input occupied_binary_sensor
-                state: "off"
-              - condition: or
-                conditions: !input condition_off
+      - conditions: !input condition_off
         sequence:
           - delay: !input no_occupancy_wait
           - sequence: !input actions_off
