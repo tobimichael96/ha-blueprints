@@ -18,7 +18,13 @@ blueprint:
         trigger:
     condition_on:
       name: Condition On
-      description: Additional conditions for turning on the devices.
+      description: Additional AND conditions for turning on the devices.
+      default: [ ]
+      selector:
+        condition:
+    condition_on_or:
+      name: Condition On Or
+      description: Additional OR conditions for turning on the devices.
       default: [ ]
       selector:
         condition:
@@ -60,11 +66,17 @@ triggers:
 actions:
   - choose:
       - conditions:
-          - condition: state
-            entity_id: !input occupied_binary_sensor
-            state: "on"
-          - condition: and
-            conditions: !input condition_on
+          - condition: or
+            conditions:
+              - condition: and
+                conditions:
+                  - condition: state
+                    entity_id: !input occupied_binary_sensor
+                    state: "on"
+                  - condition: and
+                    conditions: !input condition_on
+              - condition: and
+                conditions: !input condition_on_or
         sequence: !input actions_on
       - conditions:
           - condition: or
