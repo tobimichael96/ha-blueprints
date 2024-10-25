@@ -76,7 +76,7 @@ actions:
                   - condition: and
                     conditions: !input condition_on
               - condition: or
-                conditions: !input condition_on
+                conditions: !input condition_on_or
         sequence: !input actions_on
       - conditions:
           - condition: or
