@@ -30,7 +30,13 @@ blueprint:
         condition:
     condition_off:
       name: Condition Off
-      description: Additional conditions for turning off the devices.
+      description: Additional OR conditions for turning off the devices.
+      default: [ ]
+      selector:
+        condition:
+    condition_off_and:
+      name: Condition Off And
+      description: Additional AND conditions for turning off the devices.
       default: [ ]
       selector:
         condition:
@@ -79,13 +85,17 @@ actions:
                 conditions: !input condition_on_or
         sequence: !input actions_on
       - conditions:
-          - condition: or
+          - condition: and
             conditions:
-              - condition: state
-                entity_id: !input occupied_binary_sensor
-                state: "off"
               - condition: or
-                conditions: !input condition_off
+                conditions:
+                  - condition: state
+                    entity_id: !input occupied_binary_sensor
+                    state: "off"
+                  - condition: or
+                    conditions: !input condition_off
+              - condition: or
+                conditions: !input condition_off_and
         sequence:
           - delay: !input no_occupancy_wait
           - sequence: !input actions_off
