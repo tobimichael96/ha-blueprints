@@ -1,0 +1,231 @@
+blueprint:
+  name: Cover
+  description: Set position of cover based on position of the window, weather condition, temperature and the state of the sun.
+  domain: automation
+  input:
+    outside_temperature_sensor:
+      name: Outside temperature sensor
+      description: Sensor that gives the temperature from outside.
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    room_temperature_sensor:
+      name: Room temperature sensor
+      description: Sensor that gives the temperature from the room.
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+    outside_temperature_max:
+      name: Outside temperature maximum
+      description: Maximum outside temperature for closing the cover.
+      selector:
+        number:
+          min: 0
+          max: 40
+          unit_of_measurement: "°C"
+          mode: box
+    room_cover:
+      name: Cover
+      description: Cover of the room.
+      selector:
+        entity:
+          filter:
+            - domain: cover
+    window_entity:
+      name: Window Entity
+      description: Window entity that should be checked.
+      selector:
+        entity:
+          filter:
+            - domain: input_select
+    sunset_offset:
+      name: Sunset offset
+      description: Offset for the sunset. Format should be "00:00:00".
+      default: "00:00:00"
+      selector:
+        text:
+          type: time
+    check_sleeping:
+      name: Check sleeping
+      description: Whether to check the sleeping condition or not.
+      default: true
+      selector:
+        boolean:
+    close_cover:
+      name: Close cover
+      description: Whether to close the cover completely or not.
+      default: true
+      selector:
+        boolean:
+    close_cover_to_position:
+      name: Close cover to position
+      description: Whether to close the cover to a position or not.
+      default: true
+      selector:
+        boolean:
+    close_cover_to_position_number:
+      name: Close cover position
+      description: Number to what the cover should be set when closed.
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 100
+          mode: box
+    additional_conditions:
+      name: Additional conditions
+      description: Additional conditions for opening cover.
+      default: [ ]
+      selector:
+        condition:
+    additional_triggers:
+      name: Additional triggers
+      default: [ ]
+      selector:
+        trigger:
+    
+mode: restart  
+
+triggers:
+  - trigger: state
+    entity_id:
+      - !input window_entity
+    id: window_open
+    from: Closed
+  - trigger: state
+    entity_id:
+      - !input window_entity
+    to: Closed
+    id: window_closed
+  - trigger: numeric_state
+    entity_id:
+      - !input outside_temperature_sensor
+    below: 0
+  - trigger: sun
+    event: sunset
+    offset: !input sunset_offset
+    id: sunset
+  - trigger: numeric_state
+    entity_id:
+      - !input room_temperature_sensor
+    above: !input outside_temperature_max
+  - trigger: state
+    entity_id:
+      - input_boolean.sleeping
+    id: sleeping
+  - trigger: numeric_state
+    entity_id:
+      - !input outside_temperature_sensor
+    above: !input room_temperature_sensor
+  - trigger: numeric_state
+    entity_id:
+      - !input outside_temperature_sensor
+    below: !input room_temperature_sensor
+  - triggers: !input additional_triggers
+
+actions:
+  - choose:
+      - conditions:
+          - alias: Window open or Sunset/Temperature
+            condition: or
+            conditions:
+              - condition: state
+                entity_id: !input window_entity
+                state: Open
+              - condition: state
+                entity_id: !input window_entity
+                state: Tilted
+              - condition: and
+                conditions:
+                  - condition: or
+                    conditions:
+                      - condition: numeric_state
+                        entity_id: !input outside_temperature_sensor
+                        below: !input room_temperature_sensor
+                      - condition: numeric_state
+                        entity_id: !input outside_temperature_sensor
+                        below: !input outside_temperature_max
+                      - condition: sun
+                        before: sunrise
+                        before_offset: "02:00:00"
+                        after: sunset
+                        after_offset: !input sunset_offset
+                    alias: Sunset/Temperature
+                  - condition: state
+                    entity_id: input_boolean.sleeping
+                    state: "off"
+                  - condition: or
+                    conditions: !input additional_conditions
+          - condition: numeric_state
+            entity_id: !input room_cover
+            attribute: current_position
+            below: 100
+        sequence:
+          - alias: Open or set position on cover
+            if:
+              - condition: numeric_state
+                entity_id: !input outside_temperature_sensor
+                above: !input room_temperature_sensor
+            then:
+              - action: cover.set_cover_position
+                metadata: {}
+                data:
+                  position: 65
+                target:
+                  entity_id: !input room_cover
+            else:
+              - action: cover.open_cover
+                metadata: {}
+                data: {}
+                target:
+                  entity_id: !input room_cover
+        alias: Open cover
+      - conditions:
+          - condition: state
+            entity_id: !input window_entity
+            state: Closed
+          - condition: numeric_state
+            entity_id: !input room_cover
+            attribute: current_position
+            above: 0
+          - condition: or
+            conditions:
+              - condition: and
+                conditions:
+                  - condition: numeric_state
+                    entity_id: !input outside_temperature_sensor
+                    below: 0
+                  - condition: sun
+                    before: sunrise
+                    after: sunset
+              - condition: state
+                entity_id: input_boolean.sleeping
+                state: "on"
+                enabled: !input check_sleeping
+              - condition: and
+                conditions:
+                  - condition: sun
+                    after: sunrise
+                    after_offset: "02:00:00"
+                    before: sunset
+                    before_offset: "-04:00:00"
+                  - condition: numeric_state
+                    entity_id: !input outside_temperature_sensor
+                    above: !input outside_temperature_max
+        sequence:
+          - action: cover.close_cover
+            metadata: {}
+            data: {}
+            target:
+              entity_id: !input room_cover
+            enabled: !input close_cover
+          - action: cover.set_cover_position
+            metadata: {}
+            data:
+              position: !input close_cover_to_position_number
+            target:
+              entity_id: !input room_cover
+            enabled: !input close_cover_to_position
+        alias: Close cover
