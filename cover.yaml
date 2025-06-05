@@ -46,7 +46,6 @@ blueprint:
       default: "00:00:00"
       selector:
         text:
-          type: time
     check_sleeping:
       name: Check sleeping
       description: Whether to check the sleeping condition or not.
