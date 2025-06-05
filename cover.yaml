@@ -62,7 +62,7 @@ blueprint:
     close_cover_to_position:
       name: Close cover to position
       description: Whether to close the cover to a position or not.
-      default: true
+      default: false
       selector:
         boolean:
     close_cover_to_position_number:
