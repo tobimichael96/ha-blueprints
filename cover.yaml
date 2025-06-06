@@ -76,7 +76,9 @@ blueprint:
     additional_conditions:
       name: Additional conditions
       description: Additional conditions for opening cover.
-      default: [ ]
+      default:
+        - condition: template
+          value_template: "{{ true }}"
       selector:
         condition:
     additional_triggers:
