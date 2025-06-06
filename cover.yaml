@@ -129,7 +129,7 @@ triggers:
       - !input outside_temperature_sensor
     above: !input room_temperature_sensor
     for:
-      minutes: 5
+      minutes: 30
   - trigger: numeric_state
     entity_id:
       - !input outside_temperature_sensor
