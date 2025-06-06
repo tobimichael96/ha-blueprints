@@ -109,7 +109,7 @@ triggers:
       - !input outside_temperature_sensor
     above: !input outside_temperature_max
     for:
-      minutes: 5
+      minutes: 30
   - trigger: sun
     event: sunset
     offset: !input sunset_offset
