@@ -104,6 +104,10 @@ triggers:
     entity_id:
       - !input outside_temperature_sensor
     below: 0
+  - trigger: numeric_state
+    entity_id:
+      - !input outside_temperature_sensor
+    above: !input outside_temperature_max
   - trigger: sun
     event: sunset
     offset: !input sunset_offset
