@@ -149,9 +149,17 @@ actions:
                       - condition: numeric_state
                         entity_id: !input outside_temperature_sensor
                         below: !input room_temperature_sensor
+                        for:
+                          hours: 0
+                          minutes: 5
+                          seconds: 00
                       - condition: numeric_state
                         entity_id: !input outside_temperature_sensor
                         below: !input outside_temperature_max
+                        for:
+                          hours: 0
+                          minutes: 5
+                          seconds: 00
                       - condition: sun
                         before: sunrise
                         before_offset: "02:00:00"
@@ -219,6 +227,10 @@ actions:
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
                     above: !input outside_temperature_max
+                    for:
+                      hours: 0
+                      minutes: 30
+                      seconds: 00
         sequence:
           - action: cover.close_cover
             metadata: {}
