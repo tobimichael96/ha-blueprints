@@ -147,9 +147,14 @@ actions:
               - condition: state
                 entity_id: !input window_entity
                 state: Open
-              - condition: state
-                entity_id: !input window_entity
-                state: Tilted
+              - condition: and
+                conditions:
+                  - condition: state
+                    entity_id: !input window_entity
+                    state: Tilted
+                  - condition: state
+                    entity_id: input_boolean.sleeping
+                    state: "off"
               - condition: and
                 conditions:
                   - condition: or
