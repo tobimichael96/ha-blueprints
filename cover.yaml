@@ -94,7 +94,12 @@ triggers:
     entity_id:
       - !input window_entity
     id: window_open
-    from: Closed
+    to: Open
+  - trigger: state
+    entity_id:
+      - !input window_entity
+    id: window_tilted
+    to: Tilted
   - trigger: state
     entity_id:
       - !input window_entity
