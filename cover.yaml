@@ -206,9 +206,11 @@ actions:
                   entity_id: !input room_cover
         alias: Open cover
       - conditions:
-          - condition: state
-            entity_id: !input window_entity
-            state: Closed
+          - condition: not
+            conditions:
+              - condition: state
+                entity_id: !input window_entity
+                state: Open
           - condition: numeric_state
             entity_id: !input room_cover
             attribute: current_position
