@@ -86,8 +86,8 @@ blueprint:
       default: [ ]
       selector:
         trigger:
-    
-mode: restart  
+
+mode: restart
 
 triggers:
   - trigger: state
@@ -193,15 +193,15 @@ actions:
                 above: !input room_temperature_sensor
             then:
               - action: cover.set_cover_position
-                metadata: {}
+                metadata: { }
                 data:
                   position: 65
                 target:
                   entity_id: !input room_cover
             else:
               - action: cover.open_cover
-                metadata: {}
-                data: {}
+                metadata: { }
+                data: { }
                 target:
                   entity_id: !input room_cover
         alias: Open cover
@@ -241,13 +241,13 @@ actions:
                     above: !input outside_temperature_max
         sequence:
           - action: cover.close_cover
-            metadata: {}
-            data: {}
+            metadata: { }
+            data: { }
             target:
               entity_id: !input room_cover
             enabled: !input close_cover
           - action: cover.set_cover_position
-            metadata: {}
+            metadata: { }
             data:
               position: !input close_cover_to_position_number
             target:
