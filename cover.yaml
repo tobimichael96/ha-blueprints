@@ -163,6 +163,7 @@ actions:
               - condition: and
                 conditions:
                   - condition: or
+                    alias: Temperature
                     conditions:
                       - condition: numeric_state
                         entity_id: !input outside_temperature_sensor
@@ -170,12 +171,11 @@ actions:
                       - condition: numeric_state
                         entity_id: !input outside_temperature_sensor
                         below: !input outside_temperature_max
-                      - condition: sun
-                        before: sunrise
-                        before_offset: "02:00:00"
-                        after: sunset
-                        after_offset: !input sunset_offset
-                    alias: Sunset/Temperature
+                  - condition: sun
+                    before: sunrise
+                    before_offset: "02:00:00"
+                    after: sunset
+                    after_offset: !input sunset_offset
                   - condition: state
                     entity_id: input_boolean.sleeping
                     state: "off"
