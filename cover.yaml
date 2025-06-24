@@ -152,7 +152,9 @@ actions:
               - condition: state
                 entity_id: !input window_entity
                 state: Open
+                alias: Window open
               - condition: and
+                alias: Window tilted and sleeping off
                 conditions:
                   - condition: state
                     entity_id: !input window_entity
@@ -165,13 +167,13 @@ actions:
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
                     below: !input room_temperature_sensor
-                    alias: Below room temperature
+                    alias: Outside below room temperature
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
                     below: !input outside_temperature_max
-                    alias: Below outside temperature
+                    alias: Outside below maximum defined
                   - condition: sun
-                    alias: After sunset
+                    alias: After sunset (with offset)
                     before: sunrise
                     before_offset: "02:00:00"
                     after: sunset
@@ -179,6 +181,7 @@ actions:
                   - condition: state
                     entity_id: input_boolean.sleeping
                     state: "off"
+                    alias: Sleeping is off
                   - condition: or
                     conditions: !input additional_conditions
           - condition: numeric_state
@@ -207,6 +210,7 @@ actions:
         alias: Open cover
       - conditions:
           - condition: not
+            alias: Window not open (closed or tilted)
             conditions:
               - condition: state
                 entity_id: !input window_entity
@@ -218,6 +222,7 @@ actions:
           - condition: or
             conditions:
               - condition: and
+                alias: Outside below 0 and sun is gone
                 conditions:
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
@@ -229,7 +234,9 @@ actions:
                 entity_id: input_boolean.sleeping
                 state: "on"
                 enabled: !input check_sleeping
+                alias: Sleeping on
               - condition: and
+                alias: Outside above outside maximum defined and sun still there
                 conditions:
                   - condition: sun
                     after: sunrise
