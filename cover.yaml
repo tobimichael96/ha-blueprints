@@ -172,6 +172,9 @@ actions:
                   - condition: state
                     entity_id: input_boolean.sleeping
                     state: "off"
+              - condition: trigger
+                id:
+                  - outside_below_input
               - condition: and
                 conditions:
                   - condition: numeric_state
@@ -256,9 +259,6 @@ actions:
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
                     above: !input outside_temperature_max
-              - condition: trigger
-                id:
-                  - outside_below_input
         sequence:
           - action: cover.close_cover
             metadata: { }
