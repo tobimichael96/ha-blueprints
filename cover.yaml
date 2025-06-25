@@ -120,7 +120,7 @@ triggers:
       - !input outside_temperature_sensor
     below: !input outside_temperature_max
     for:
-      hours: 1
+      minutes: 60
   - trigger: sun
     event: sunset
     offset: !input sunset_offset
@@ -257,7 +257,7 @@ actions:
                 below: !input outside_temperature_max
                 alias: Outside below maximum input for 1 hour
                 for:
-                  hours: 1
+                  minutes: 60
         sequence:
           - action: cover.close_cover
             metadata: { }
