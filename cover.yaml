@@ -115,6 +115,12 @@ triggers:
     above: !input outside_temperature_max
     for:
       minutes: 30
+  - trigger: numeric_state
+    entity_id:
+      - !input outside_temperature_sensor
+    below: !input outside_temperature_max
+    for:
+      hours: 1
   - trigger: sun
     event: sunset
     offset: !input sunset_offset
@@ -246,6 +252,12 @@ actions:
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
                     above: !input outside_temperature_max
+              - condition: numeric_state
+                entity_id: !input outside_temperature_sensor
+                below: !input outside_temperature_max
+                alias: Outside below maximum input for 1 hour
+                for:
+                  hours: 1
         sequence:
           - action: cover.close_cover
             metadata: { }
