@@ -119,6 +119,7 @@ triggers:
     entity_id:
       - !input outside_temperature_sensor
     below: !input outside_temperature_max
+    id: below_input_for_hour
     for:
       minutes: 60
   - trigger: sun
@@ -148,10 +149,6 @@ triggers:
     for:
       minutes: 30
   - triggers: !input additional_triggers
-
-variables:
-  outside_temperature_sensor: !input outside_temperature_sensor
-  outside_temperature_max: !input outside_temperature_max
 
 actions:
   - choose:
@@ -256,10 +253,9 @@ actions:
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
                     above: !input outside_temperature_max
-              - condition: template
-                value_template: > 
-                  {{ states(outside_temperature_sensor) | float < outside_temperature_max | float }}
-                alias: Outside below maximum input for 1 hour
+              - condition: trigger
+                id:
+                  - below_input_for_hour
         sequence:
           - action: cover.close_cover
             metadata: { }
