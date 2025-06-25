@@ -149,6 +149,10 @@ triggers:
       minutes: 30
   - triggers: !input additional_triggers
 
+variables:
+  outside_temperature_sensor: !input outside_temperature_sensor
+  outside_temperature_max: !input outside_temperature_max
+
 actions:
   - choose:
       - conditions:
@@ -253,7 +257,7 @@ actions:
                     entity_id: !input outside_temperature_sensor
                     above: !input outside_temperature_max
               - condition: template
-                value_template: "{{ states(!input outside_temperature_sensor) | float < !input outside_temperature_max}}"
+                value_template: "{{ states(outside_temperature_sensor) | float < outside_temperature_max}}"
                 alias: Outside below maximum input for 1 hour
                 for:
                   minutes: 60
