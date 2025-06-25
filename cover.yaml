@@ -113,13 +113,14 @@ triggers:
     entity_id:
       - !input outside_temperature_sensor
     above: !input outside_temperature_max
+    id: above_outside_max
     for:
       minutes: 30
   - trigger: numeric_state
     entity_id:
       - !input outside_temperature_sensor
     below: !input outside_temperature_max
-    id: below_input_for_hour
+    id: outside_below_input
     for:
       minutes: 60
   - trigger: sun
@@ -140,12 +141,14 @@ triggers:
     entity_id:
       - !input outside_temperature_sensor
     above: !input room_temperature_sensor
+    id: outside_above_room
     for:
       minutes: 30
   - trigger: numeric_state
     entity_id:
       - !input outside_temperature_sensor
     below: !input room_temperature_sensor
+    id: outside_below_room
     for:
       minutes: 30
   - triggers: !input additional_triggers
@@ -255,7 +258,7 @@ actions:
                     above: !input outside_temperature_max
               - condition: trigger
                 id:
-                  - below_input_for_hour
+                  - outside_below_input
         sequence:
           - action: cover.close_cover
             metadata: { }
