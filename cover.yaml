@@ -185,9 +185,6 @@ actions:
                   - condition: state
                     entity_id: input_boolean.sleeping
                     state: "off"
-              - condition: trigger
-                id:
-                  - outside_below_input
               - condition: and
                 conditions:
                   - condition: numeric_state
