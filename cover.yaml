@@ -40,6 +40,15 @@ blueprint:
         entity:
           filter:
             - domain: input_select
+    window_entity_time:
+      name: Window Open Time
+      description: Window entity open for (in seconds).
+      default: 1
+      selector:
+        number:
+          min: 0
+          max: 120
+          mode: box
     sunset_offset:
       name: Sunset offset
       description: Offset for the sunset. Format should be "00:00:00".
@@ -95,6 +104,8 @@ triggers:
       - !input window_entity
     id: window_open
     to: Open
+    for:
+      seconds: !input window_entity_time
   - trigger: state
     entity_id:
       - !input window_entity
@@ -163,6 +174,8 @@ actions:
                 entity_id: !input window_entity
                 state: Open
                 alias: Window open
+                for:
+                  seconds: !input window_entity_time
               - condition: and
                 alias: Window tilted and sleeping off
                 conditions:
