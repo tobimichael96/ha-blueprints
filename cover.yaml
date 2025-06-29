@@ -90,6 +90,14 @@ blueprint:
           value_template: "{{ true }}"
       selector:
         condition:
+    additional_conditions_and:
+      name: Additional and conditions
+      description: Additional and conditions for opening cover.
+      default:
+        - condition: template
+          value_template: "{{ true }}"
+      selector:
+        condition:
     additional_triggers:
       name: Additional triggers
       default: [ ]
@@ -167,6 +175,9 @@ triggers:
 actions:
   - choose:
       - conditions:
+          - alias: Additional conditions
+            condition: or
+            conditions: !input additional_conditions_and
           - alias: Window open or Sunset/Temperature
             condition: or
             conditions:
