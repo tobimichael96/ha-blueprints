@@ -55,6 +55,12 @@ blueprint:
       default: "00:00:00"
       selector:
         text:
+    before_sunset_offset:
+      name: Before sunset offset
+      description: Before offset for the sunset for closing condition. Format should be "00:00:00".
+      default: "-04:00:00"
+      selector:
+        text:
     check_sleeping:
       name: Check sleeping
       description: Whether to check the sleeping condition or not.
@@ -145,6 +151,10 @@ triggers:
   - trigger: sun
     event: sunset
     offset: !input sunset_offset
+    id: sunset
+  - trigger: sun
+    event: sunset
+    offset: !input before_sunset_offset
     id: sunset
   - trigger: numeric_state
     entity_id:
@@ -279,7 +289,7 @@ actions:
                     after: sunrise
                     after_offset: "02:00:00"
                     before: sunset
-                    before_offset: "-04:00:00"
+                    before_offset: !input before_sunset_offset
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
                     above: !input outside_temperature_max
