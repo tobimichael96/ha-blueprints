@@ -232,7 +232,7 @@ actions:
                 conditions:
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
-                    above: !input room_temperature_sensor
+                    below: !input room_temperature_sensor
                   - condition: sun
                     alias: After sunset (with offset)
                     before: sunrise
@@ -240,16 +240,16 @@ actions:
                     after: sunset
                     after_offset: !input sunset_offset
             then:
+              - action: cover.open_cover
+                metadata: { }
+                data: { }
+                target:
+                  entity_id: !input room_cover
+            else:
               - action: cover.set_cover_position
                 metadata: { }
                 data:
                   position: 65
-                target:
-                  entity_id: !input room_cover
-            else:
-              - action: cover.open_cover
-                metadata: { }
-                data: { }
                 target:
                   entity_id: !input room_cover
         alias: Open cover
