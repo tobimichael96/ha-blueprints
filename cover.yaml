@@ -227,9 +227,18 @@ actions:
         sequence:
           - alias: Open or set position on cover
             if:
-              - condition: numeric_state
-                entity_id: !input outside_temperature_sensor
-                above: !input room_temperature_sensor
+              - condition: or
+                alias: Outside below room temperature or sun gone
+                conditions:
+                  - condition: numeric_state
+                    entity_id: !input outside_temperature_sensor
+                    above: !input room_temperature_sensor
+                  - condition: sun
+                    alias: After sunset (with offset)
+                    before: sunrise
+                    before_offset: "02:00:00"
+                    after: sunset
+                    after_offset: !input sunset_offset
             then:
               - action: cover.set_cover_position
                 metadata: { }
