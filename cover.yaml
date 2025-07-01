@@ -96,14 +96,6 @@ blueprint:
           value_template: "{{ true }}"
       selector:
         condition:
-    additional_conditions_and:
-      name: Additional and conditions
-      description: Additional and conditions for opening cover.
-      default:
-        - condition: template
-          value_template: "{{ true }}"
-      selector:
-        condition:
     additional_triggers:
       name: Additional triggers
       default: [ ]
@@ -185,9 +177,6 @@ triggers:
 actions:
   - choose:
       - conditions:
-          - alias: Additional conditions
-            condition: or
-            conditions: !input additional_conditions_and
           - alias: Window open or Sunset/Temperature
             condition: or
             conditions:
@@ -208,13 +197,13 @@ actions:
                     state: "off"
               - condition: and
                 conditions:
-                  - condition: numeric_state
-                    entity_id: !input outside_temperature_sensor
-                    below: !input room_temperature_sensor
-                    alias: Outside below room temperature
                   - condition: or
                     alias: Outside below maximum defined or sun gone
                     conditions:
+                      - condition: numeric_state
+                        entity_id: !input outside_temperature_sensor
+                        below: !input room_temperature_sensor
+                        alias: Outside below room temperature
                       - condition: numeric_state
                         entity_id: !input outside_temperature_sensor
                         below: !input outside_temperature_max
