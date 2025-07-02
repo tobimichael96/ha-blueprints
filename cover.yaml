@@ -132,14 +132,14 @@ triggers:
     above: !input outside_temperature_max
     id: above_outside_max
     for:
-      minutes: 30
+      minutes: 15
   - trigger: numeric_state
     entity_id:
       - !input outside_temperature_sensor
     below: !input outside_temperature_max
     id: outside_below_input
     for:
-      minutes: 60
+      minutes: 30
   - trigger: sun
     event: sunset
     offset: !input sunset_offset
@@ -164,14 +164,14 @@ triggers:
     above: !input room_temperature_sensor
     id: outside_above_room
     for:
-      minutes: 30
+      minutes: 15
   - trigger: numeric_state
     entity_id:
       - !input outside_temperature_sensor
     below: !input room_temperature_sensor
     id: outside_below_room
     for:
-      minutes: 30
+      minutes: 15
   - triggers: !input additional_triggers
 
 actions:
