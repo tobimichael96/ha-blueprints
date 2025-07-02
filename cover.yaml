@@ -281,7 +281,7 @@ actions:
                 enabled: !input check_sleeping
                 alias: Sleeping on
               - condition: and
-                alias: Outside above outside maximum defined and sun still there
+                alias: Outside above maximum defined, room temperature and sun still there
                 conditions:
                   - condition: sun
                     after: sunrise
@@ -291,6 +291,9 @@ actions:
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
                     above: !input outside_temperature_max
+                  - condition: numeric_state
+                    entity_id: !input outside_temperature_sensor
+                    above: !input room_temperature_sensor
         sequence:
           - action: cover.close_cover
             metadata: { }
