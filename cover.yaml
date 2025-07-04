@@ -132,7 +132,7 @@ triggers:
     above: !input outside_temperature_max
     id: above_outside_max
     for:
-      minutes: 15
+      minutes: 5
   - trigger: numeric_state
     entity_id:
       - !input outside_temperature_sensor
@@ -164,14 +164,14 @@ triggers:
     above: !input room_temperature_sensor
     id: outside_above_room
     for:
-      minutes: 15
+      minutes: 5
   - trigger: numeric_state
     entity_id:
       - !input outside_temperature_sensor
     below: !input room_temperature_sensor
     id: outside_below_room
     for:
-      minutes: 15
+      minutes: 30
   - triggers: !input additional_triggers
 
 actions:
