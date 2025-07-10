@@ -294,6 +294,7 @@ actions:
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
                     above: !input room_temperature_sensor
+                    value_template: "{{ float(state.state) + 2 }}"
         sequence:
           - action: cover.close_cover
             metadata: { }
