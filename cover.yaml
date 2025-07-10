@@ -204,6 +204,7 @@ actions:
                         entity_id: !input outside_temperature_sensor
                         below: !input room_temperature_sensor
                         alias: Outside below room temperature
+                        value_template: "{{ float(state.state) + 3 }}"
                       - condition: numeric_state
                         entity_id: !input outside_temperature_sensor
                         below: !input outside_temperature_max
@@ -294,7 +295,7 @@ actions:
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
                     above: !input room_temperature_sensor
-                    value_template: "{{ float(state.state) + 2 }}"
+                    value_template: "{{ float(state.state) + 3 }}"
         sequence:
           - action: cover.close_cover
             metadata: { }
