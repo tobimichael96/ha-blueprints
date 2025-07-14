@@ -214,7 +214,7 @@ actions:
                         entity_id: !input outside_temperature_sensor
                         below: !input room_temperature_sensor
                         alias: Outside below room temperature
-                        value_template: {% if is_state(weather_entity, 'sunny') %} {{ float('21') + 4 }} {% elif is_state(weather_entity, 'partlycloudy') %} {{ float('21') + 2 }} {% else %} {{ float('21') + 1 }} {% endif %}
+                        value_template: "{% if is_state(weather_entity, 'sunny') %} {{ float('21') + 4 }} {% elif is_state(weather_entity, 'partlycloudy') %} {{ float('21') + 2 }} {% else %} {{ float('21') + 1 }} {% endif %}"
                       - condition: numeric_state
                         entity_id: !input outside_temperature_sensor
                         below: !input outside_temperature_max
@@ -305,7 +305,7 @@ actions:
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
                     above: !input room_temperature_sensor
-                    value_template: {% if is_state(weather_entity, 'sunny') %} {{ float('21') + 4 }} {% elif is_state(weather_entity, 'partlycloudy') %} {{ float('21') + 2 }} {% else %} {{ float('21') + 1 }} {% endif %}
+                    value_template: "{% if is_state(weather_entity, 'sunny') %} {{ float('21') + 4 }} {% elif is_state(weather_entity, 'partlycloudy') %} {{ float('21') + 2 }} {% else %} {{ float('21') + 1 }} {% endif %}"
         sequence:
           - action: cover.close_cover
             metadata: { }
