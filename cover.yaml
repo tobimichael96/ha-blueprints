@@ -232,6 +232,28 @@ actions:
                             entity_id: !input weather_entity
                             state: "partlycloudy"
                             alias: Partly cloudy
+                      - condition: and
+                        alias: Condition not sunny or partlycloudy
+                        conditions:
+                          - condition: numeric_state
+                            entity_id: !input outside_temperature_sensor
+                            below: !input room_temperature_sensor
+                            alias: Outside below room temperature
+                            value_template: "{{ float(state.state) }}"
+                          - condition: not
+                            alias: Not sunny or partlycloudy
+                            conditions:
+                              - condition: or
+                                alias: Sunny or partlycloudy
+                                conditions:
+                                  - condition: state
+                                    entity_id: !input weather_entity
+                                    state: "sunny"
+                                    alias: Sunny
+                                  - condition: state
+                                    entity_id: !input weather_entity
+                                    state: "partlycloudy"
+                                    alias: Partly cloudy
                       - condition: numeric_state
                         entity_id: !input outside_temperature_sensor
                         below: !input outside_temperature_max
@@ -346,6 +368,28 @@ actions:
                             entity_id: !input weather_entity
                             state: "partlycloudy"
                             alias: Partly cloudy
+                      - condition: and
+                        alias: Condition not sunny or partlycloudy
+                        conditions:
+                          - condition: numeric_state
+                            entity_id: !input outside_temperature_sensor
+                            above: !input room_temperature_sensor
+                            alias: Outside below room temperature
+                            value_template: "{{ float(state.state) }}"
+                          - condition: not
+                            alias: Not sunny or partlycloudy
+                            conditions:
+                              - condition: or
+                                alias: Sunny or partlycloudy
+                                conditions:
+                                  - condition: state
+                                    entity_id: !input weather_entity
+                                    state: "sunny"
+                                    alias: Sunny
+                                  - condition: state
+                                    entity_id: !input weather_entity
+                                    state: "partlycloudy"
+                                    alias: Partly cloudy
         sequence:
           - action: cover.close_cover
             metadata: { }
