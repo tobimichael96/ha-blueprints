@@ -113,6 +113,24 @@ blueprint:
       selector:
         boolean:
 
+    close_cover_completely:
+      name: Close cover completely
+      description: Whether to close the cover completely or to a specific position.
+      default: true
+      selector:
+        boolean:
+
+    close_cover_position:
+      name: Close cover position
+      description: Position to set when not closing completely (0 = fully closed, 100 = fully open).
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 100
+          unit_of_measurement: "%"
+          mode: box
+
     manual_override_duration:
       name: Manual override duration
       description: Minutes to wait after manual cover operation before automation resumes.
@@ -122,16 +140,6 @@ blueprint:
           min: 0
           max: 180
           unit_of_measurement: "minutes"
-          mode: box
-
-    position_tolerance:
-      name: Position tolerance
-      description: Don't move cover if within this many percent of target position.
-      default: 5
-      selector:
-        number:
-          min: 1
-          max: 20
           mode: box
 
     # Additional Conditions and Triggers
@@ -189,17 +197,23 @@ trigger:
   # Temperature changes
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
+    above: -50
+    below: 50
     id: temperature_changed
 
   # Sun position changes
   - platform: numeric_state
     entity_id: sun.sun
     attribute: elevation
+    above: -90
+    below: 90
     id: sun_elevation_changed
 
   - platform: numeric_state
     entity_id: sun.sun
     attribute: azimuth
+    above: 0
+    below: 360
     id: sun_azimuth_changed
 
   # Weather changes
@@ -250,12 +264,26 @@ action:
                     value_template: "{{ window_state != 'Open' }}"
 
         sequence:
-          - condition: template
-            value_template: "{{ current_position > position_tolerance }}"
+          - choose:
+              # Close completely
+              - conditions:
+                  - condition: template
+                    value_template: "{{ close_cover_completely }}"
+                sequence:
+                  - action: cover.close_cover
+                    target:
+                      entity_id: !input room_cover
 
-          - action: cover.close_cover
-            target:
-              entity_id: !input room_cover
+              # Close to specific position
+              - conditions:
+                  - condition: template
+                    value_template: "{{ not close_cover_completely }}"
+                sequence:
+                  - action: cover.set_cover_position
+                    target:
+                      entity_id: !input room_cover
+                    data:
+                      position: !input close_cover_position
 
         alias: "Close Cover"
 
@@ -283,9 +311,6 @@ action:
                     value_template: "{{ not is_too_hot_with_sun }}"
 
         sequence:
-          - condition: template
-            value_template: "{{ (100 - current_position) > position_tolerance }}"
-
           - action: cover.open_cover
             target:
               entity_id: !input room_cover
