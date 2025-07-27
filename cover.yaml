@@ -180,7 +180,7 @@ variables:
   last_changed: "{{ (now() - states[room_cover].last_changed).total_seconds() }}"
   manual_override_active: "{{ last_changed < (manual_override_duration * 60) }}"
 
-triggers:
+trigger:
   # Window state changes
   - platform: state
     entity_id: !input window_entity
@@ -211,9 +211,6 @@ triggers:
   - platform: state
     entity_id: input_boolean.sleeping
     id: sleeping_changed
-
-  # Additional triggers
-  - !input additional_triggers
 
 condition:
   # Don't act if manual override is active
