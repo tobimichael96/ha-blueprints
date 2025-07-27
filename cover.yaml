@@ -165,7 +165,7 @@ variables:
   sun_azimuth: "{{ state_attr('sun.sun', 'azimuth') | float(0) }}"
 
   # Check if sun is hitting windows directly
-  sun_hits_windows: >
+  sun_hits_windows: >-
     {{ sun_elevation >= sun_hits_window_elevation_min and 
        sun_elevation <= sun_hits_window_elevation_max and
        sun_azimuth >= sun_hits_window_azimuth_min and 
@@ -182,48 +182,49 @@ variables:
 
 triggers:
   # Window state changes
-  - trigger: state
+  - platform: state
     entity_id: !input window_entity
     id: window_changed
 
   # Temperature changes
-  - trigger: numeric_state
+  - platform: numeric_state
     entity_id: !input outside_temperature_sensor
     id: temperature_changed
 
-  # Sun position changes (every 30 minutes during day)
-  - trigger: numeric_state
+  # Sun position changes
+  - platform: numeric_state
     entity_id: sun.sun
     attribute: elevation
     id: sun_elevation_changed
 
-  - trigger: numeric_state
+  - platform: numeric_state
     entity_id: sun.sun
     attribute: azimuth
     id: sun_azimuth_changed
 
   # Weather changes
-  - trigger: state
+  - platform: state
     entity_id: !input weather_entity
     id: weather_changed
 
   # Sleeping state changes
-  - trigger: state
+  - platform: state
     entity_id: input_boolean.sleeping
     id: sleeping_changed
 
   # Additional triggers
-  - triggers: !input additional_triggers
+  - !input additional_triggers
 
-conditions:
+condition:
   # Don't act if manual override is active
   - condition: template
     value_template: "{{ not manual_override_active }}"
+
   # Additional user conditions
   - condition: and
     conditions: !input additional_conditions
 
-actions:
+action:
   - choose:
       # CLOSE COVER CONDITIONS
       - conditions:
@@ -238,9 +239,11 @@ actions:
                     value_template: "{{ is_sleeping }}"
                   - condition: template
                     value_template: "{{ window_state != 'Open' }}"
+
               # Close when freezing
               - condition: template
                 value_template: "{{ is_freezing }}"
+
               # Close when sun hits windows and it's too hot
               - condition: and
                 conditions:
@@ -252,9 +255,11 @@ actions:
         sequence:
           - condition: template
             value_template: "{{ current_position > position_tolerance }}"
+
           - action: cover.close_cover
             target:
               entity_id: !input room_cover
+
         alias: "Close Cover"
 
       # OPEN COVER CONDITIONS (all other times)
@@ -279,6 +284,7 @@ actions:
                     value_template: "{{ not is_freezing }}"
                   - condition: template
                     value_template: "{{ not is_too_hot_with_sun }}"
+
         sequence:
           - condition: template
             value_template: "{{ (100 - current_position) > position_tolerance }}"
@@ -286,4 +292,5 @@ actions:
           - action: cover.open_cover
             target:
               entity_id: !input room_cover
+
         alias: "Open Cover"
