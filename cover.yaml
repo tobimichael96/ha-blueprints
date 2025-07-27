@@ -229,8 +229,6 @@ actions:
                         entity_id: !input weather_entity
                         state: "cloudy"
                         alias: Cloudy
-                      - condition: and
-                        alias: Condition sunny
             then:
               - action: cover.set_cover_position
                 metadata: { }
@@ -299,8 +297,6 @@ actions:
                         entity_id: !input weather_entity
                         state: "cloudy"
                         alias: Cloudy
-                      - condition: and
-                        alias: Condition sunny
         sequence:
           - action: cover.close_cover
             metadata: { }
