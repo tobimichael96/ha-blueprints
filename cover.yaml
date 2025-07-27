@@ -10,20 +10,13 @@ blueprint:
         entity:
           filter:
             - domain: sensor
-    room_temperature_sensor:
-      name: Room temperature sensor
-      description: Sensor that gives the temperature from the room.
-      selector:
-        entity:
-          filter:
-            - domain: sensor
     outside_temperature_max:
       name: Outside temperature maximum
       description: Maximum outside temperature for closing the cover.
       selector:
         number:
           min: 0
-          max: 40
+          max: 30
           unit_of_measurement: "°C"
           mode: box
     room_cover:
@@ -124,6 +117,8 @@ triggers:
       - !input window_entity
     id: window_tilted
     to: Tilted
+    for:
+      seconds: !input window_entity_time
   - trigger: state
     entity_id:
       - !input window_entity
@@ -138,15 +133,11 @@ triggers:
       - !input outside_temperature_sensor
     above: !input outside_temperature_max
     id: above_outside_max
-    for:
-      minutes: 5
   - trigger: numeric_state
     entity_id:
       - !input outside_temperature_sensor
     below: !input outside_temperature_max
     id: outside_below_input
-    for:
-      minutes: 30
   - trigger: sun
     event: sunset
     offset: !input sunset_offset
@@ -155,30 +146,10 @@ triggers:
     event: sunset
     offset: !input before_sunset_offset
     id: sunset
-  - trigger: numeric_state
-    entity_id:
-      - !input room_temperature_sensor
-    above: !input outside_temperature_max
-    for:
-      minutes: 5
   - trigger: state
     entity_id:
       - input_boolean.sleeping
     id: sleeping
-  - trigger: numeric_state
-    entity_id:
-      - !input outside_temperature_sensor
-    above: !input room_temperature_sensor
-    id: outside_above_room
-    for:
-      minutes: 5
-  - trigger: numeric_state
-    entity_id:
-      - !input outside_temperature_sensor
-    below: !input room_temperature_sensor
-    id: outside_below_room
-    for:
-      minutes: 30
   - triggers: !input additional_triggers
 
 actions:
@@ -208,52 +179,6 @@ actions:
                   - condition: or
                     alias: Outside below maximum defined or sun gone
                     conditions:
-                      - condition: and
-                        alias: Condition sunny
-                        conditions:
-                          - condition: numeric_state
-                            entity_id: !input outside_temperature_sensor
-                            below: !input room_temperature_sensor
-                            alias: Outside below room temperature
-                            value_template: "{{ float(state.state) + 2 }}"
-                          - condition: state
-                            entity_id: !input weather_entity
-                            state: "sunny"
-                            alias: Sunny
-                      - condition: and
-                        alias: Condition partlycloudy
-                        conditions:
-                          - condition: numeric_state
-                            entity_id: !input outside_temperature_sensor
-                            below: !input room_temperature_sensor
-                            alias: Outside below room temperature
-                            value_template: "{{ float(state.state) }}"
-                          - condition: state
-                            entity_id: !input weather_entity
-                            state: "partlycloudy"
-                            alias: Partly cloudy
-                      - condition: and
-                        alias: Condition not sunny or partlycloudy
-                        conditions:
-                          - condition: numeric_state
-                            entity_id: !input outside_temperature_sensor
-                            below: !input room_temperature_sensor
-                            alias: Outside below room temperature
-                            value_template: "{{ float(state.state) - 1 }}"
-                          - condition: not
-                            alias: Not sunny or partlycloudy
-                            conditions:
-                              - condition: or
-                                alias: Sunny or partlycloudy
-                                conditions:
-                                  - condition: state
-                                    entity_id: !input weather_entity
-                                    state: "sunny"
-                                    alias: Sunny
-                                  - condition: state
-                                    entity_id: !input weather_entity
-                                    state: "partlycloudy"
-                                    alias: Partly cloudy
                       - condition: numeric_state
                         entity_id: !input outside_temperature_sensor
                         below: !input outside_temperature_max
@@ -277,29 +202,46 @@ actions:
         sequence:
           - alias: Open or set position on cover
             if:
-              - condition: or
-                alias: Outside below room temperature or sun gone
+              - condition: and
+                alias: Outside above maximum defined and sun still there
                 conditions:
+                  - condition: sun
+                    after: sunrise
+                    after_offset: "02:00:00"
+                    before: sunset
+                    before_offset: !input before_sunset_offset
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
-                    below: !input room_temperature_sensor
-                  - condition: sun
-                    alias: After sunset (with offset)
-                    before: sunrise
-                    before_offset: "02:00:00"
-                    after: sunset
-                    after_offset: !input sunset_offset
+                    above: !input outside_temperature_max
+                    alias: Outside above max input temperature
+                  - condition: or
+                    alias: Check weather condition
+                    conditions:
+                      - condition: state
+                        entity_id: !input weather_entity
+                        state: "sunny"
+                        alias: Sunny
+                      - condition: state
+                        entity_id: !input weather_entity
+                        state: "partlycloudy"
+                        alias: Partly cloudy
+                      - condition: state
+                        entity_id: !input weather_entity
+                        state: "cloudy"
+                        alias: Cloudy
+                      - condition: and
+                        alias: Condition sunny
             then:
-              - action: cover.open_cover
-                metadata: { }
-                data: { }
-                target:
-                  entity_id: !input room_cover
-            else:
               - action: cover.set_cover_position
                 metadata: { }
                 data:
                   position: 65
+                target:
+                  entity_id: !input room_cover
+            else:
+              - action: cover.open_cover
+                metadata: { }
+                data: { }
                 target:
                   entity_id: !input room_cover
         alias: Open cover
@@ -331,7 +273,7 @@ actions:
                 enabled: !input check_sleeping
                 alias: Sleeping on
               - condition: and
-                alias: Outside above maximum defined, room temperature and sun still there
+                alias: Outside above maximum defined and sun still there
                 conditions:
                   - condition: sun
                     after: sunrise
@@ -341,55 +283,24 @@ actions:
                   - condition: numeric_state
                     entity_id: !input outside_temperature_sensor
                     above: !input outside_temperature_max
+                    alias: Outside above max input temperature
                   - condition: or
-                    alias: Check weather condition and temperature
+                    alias: Check weather condition
                     conditions:
+                      - condition: state
+                        entity_id: !input weather_entity
+                        state: "sunny"
+                        alias: Sunny
+                      - condition: state
+                        entity_id: !input weather_entity
+                        state: "partlycloudy"
+                        alias: Partly cloudy
+                      - condition: state
+                        entity_id: !input weather_entity
+                        state: "cloudy"
+                        alias: Cloudy
                       - condition: and
                         alias: Condition sunny
-                        conditions:
-                          - condition: numeric_state
-                            entity_id: !input outside_temperature_sensor
-                            above: !input room_temperature_sensor
-                            alias: Outside below room temperature
-                            value_template: "{{ float(state.state) + 2 }}"
-                          - condition: state
-                            entity_id: !input weather_entity
-                            state: "sunny"
-                            alias: Sunny
-                      - condition: and
-                        alias: Condition partlycloudy
-                        conditions:
-                          - condition: numeric_state
-                            entity_id: !input outside_temperature_sensor
-                            above: !input room_temperature_sensor
-                            alias: Outside below room temperature
-                            value_template: "{{ float(state.state) }}"
-                          - condition: state
-                            entity_id: !input weather_entity
-                            state: "partlycloudy"
-                            alias: Partly cloudy
-                      - condition: and
-                        alias: Condition not sunny or partlycloudy
-                        conditions:
-                          - condition: numeric_state
-                            entity_id: !input outside_temperature_sensor
-                            above: !input room_temperature_sensor
-                            alias: Outside below room temperature
-                            value_template: "{{ float(state.state) - 1 }}"
-                          - condition: not
-                            alias: Not sunny or partlycloudy
-                            conditions:
-                              - condition: or
-                                alias: Sunny or partlycloudy
-                                conditions:
-                                  - condition: state
-                                    entity_id: !input weather_entity
-                                    state: "sunny"
-                                    alias: Sunny
-                                  - condition: state
-                                    entity_id: !input weather_entity
-                                    state: "partlycloudy"
-                                    alias: Partly cloudy
         sequence:
           - action: cover.close_cover
             metadata: { }
