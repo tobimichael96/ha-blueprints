@@ -127,11 +127,6 @@ triggers:
       - !input outside_temperature_sensor
     above: !input outside_temperature_max
     id: above_outside_max
-  - trigger: numeric_state
-    entity_id:
-      - !input outside_temperature_sensor
-    below: !input outside_temperature_max
-    id: outside_below_input
   - trigger: sun
     event: sunset
     offset: !input sunset_offset
@@ -144,6 +139,88 @@ triggers:
 
 actions:
   - choose:
+      - conditions:
+          - condition: not
+            alias: Window not open (closed or tilted)
+            conditions:
+              - condition: state
+                entity_id: !input window_entity
+                state: Open
+          - condition: numeric_state
+            entity_id: !input room_cover
+            attribute: current_position
+            above: 0
+          - condition: or
+            conditions:
+              - condition: and
+                alias: Outside below 0 and sun is gone
+                conditions:
+                  - condition: numeric_state
+                    entity_id: !input outside_temperature_sensor
+                    below: 0
+                  - condition: sun
+                    before: sunrise
+                    after: sunset
+              - condition: state
+                entity_id: input_boolean.sleeping
+                state: "on"
+                enabled: !input check_sleeping
+                alias: Sleeping on
+              - condition: and
+                alias: Outside above maximum defined and sun still there
+                conditions:
+                  - condition: sun
+                    after: sunrise
+                    after_offset: "02:00:00"
+                    before: sunset
+                    before_offset: !input sunset_offset
+                  - condition: numeric_state
+                    entity_id: !input outside_temperature_sensor
+                    above: !input outside_temperature_max
+                    alias: Outside above max input temperature
+                  - condition: or
+                    alias: Check weather condition
+                    conditions:
+                      - condition: state
+                        entity_id: !input weather_entity
+                        state: "sunny"
+                        alias: Sunny
+                      - condition: state
+                        entity_id: !input weather_entity
+                        state: "partlycloudy"
+                        alias: Partly cloudy
+                      - condition: state
+                        entity_id: !input weather_entity
+                        state: "cloudy"
+                        alias: Cloudy
+        sequence:
+          - alias: Open or set position on cover
+            enabled: !input close_cover
+            if:
+              - condition: state
+                entity_id: !input window_entity
+                state: Tilted
+            then:
+              - action: cover.set_cover_position
+                metadata: { }
+                data:
+                  position: 65
+                target:
+                  entity_id: !input room_cover
+            else:
+              - action: cover.close_cover
+                metadata: { }
+                data: { }
+                target:
+                  entity_id: !input room_cover
+          - action: cover.set_cover_position
+            metadata: { }
+            data:
+              position: !input close_cover_to_position_number
+            target:
+              entity_id: !input room_cover
+            enabled: !input close_cover_to_position
+        alias: Close cover
       - conditions:
           - alias: Window open or Sunset/Temperature
             condition: or
@@ -224,72 +301,3 @@ actions:
                 target:
                   entity_id: !input room_cover
         alias: Open cover
-      - conditions:
-          - condition: not
-            alias: Window not open (closed or tilted)
-            conditions:
-              - condition: state
-                entity_id: !input window_entity
-                state: Open
-          - condition: numeric_state
-            entity_id: !input room_cover
-            attribute: current_position
-            above: 0
-          - condition: or
-            conditions:
-              - condition: and
-                alias: Outside below 0 and sun is gone
-                conditions:
-                  - condition: numeric_state
-                    entity_id: !input outside_temperature_sensor
-                    below: 0
-                  - condition: sun
-                    before: sunrise
-                    after: sunset
-              - condition: state
-                entity_id: input_boolean.sleeping
-                state: "on"
-                enabled: !input check_sleeping
-                alias: Sleeping on
-              - condition: and
-                alias: Outside above maximum defined and sun still there
-                conditions:
-                  - condition: sun
-                    after: sunrise
-                    after_offset: "02:00:00"
-                    before: sunset
-                    before_offset: !input sunset_offset
-                  - condition: numeric_state
-                    entity_id: !input outside_temperature_sensor
-                    above: !input outside_temperature_max
-                    alias: Outside above max input temperature
-                  - condition: or
-                    alias: Check weather condition
-                    conditions:
-                      - condition: state
-                        entity_id: !input weather_entity
-                        state: "sunny"
-                        alias: Sunny
-                      - condition: state
-                        entity_id: !input weather_entity
-                        state: "partlycloudy"
-                        alias: Partly cloudy
-                      - condition: state
-                        entity_id: !input weather_entity
-                        state: "cloudy"
-                        alias: Cloudy
-        sequence:
-          - action: cover.close_cover
-            metadata: { }
-            data: { }
-            target:
-              entity_id: !input room_cover
-            enabled: !input close_cover
-          - action: cover.set_cover_position
-            metadata: { }
-            data:
-              position: !input close_cover_to_position_number
-            target:
-              entity_id: !input room_cover
-            enabled: !input close_cover_to_position
-        alias: Close cover
