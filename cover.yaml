@@ -154,15 +154,10 @@ actions:
                 alias: Window open
                 for:
                   seconds: !input window_entity_time
-              - condition: and
-                alias: Window tilted and sleeping off
-                conditions:
-                  - condition: state
-                    entity_id: !input window_entity
-                    state: Tilted
-                  - condition: state
-                    entity_id: input_boolean.sleeping
-                    state: "off"
+              - condition: state
+                entity_id: input_boolean.sleeping
+                state: "off"
+                alias: Sleeping off
               - condition: and
                 alias: Check temperature, sleeping and additional
                 conditions:
