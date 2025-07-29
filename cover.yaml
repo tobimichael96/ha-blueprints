@@ -154,10 +154,6 @@ actions:
                 alias: Window open
                 for:
                   seconds: !input window_entity_time
-              - condition: state
-                entity_id: input_boolean.sleeping
-                state: "off"
-                alias: Sleeping off
               - condition: and
                 alias: Check temperature, sleeping and additional
                 conditions:
