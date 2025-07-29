@@ -194,7 +194,7 @@ actions:
                         state: "cloudy"
                         alias: Cloudy
         sequence:
-          - alias: Open or set position on cover
+          - alias: Close or set position on cover
             enabled: !input close_cover
             if:
               - condition: state
