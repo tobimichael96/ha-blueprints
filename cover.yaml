@@ -231,6 +231,12 @@ actions:
                 alias: Window open
                 for:
                   seconds: !input window_entity_time
+              - condition: state
+                entity_id: !input window_entity
+                state: Tilted
+                alias: Window tilted
+                for:
+                  seconds: !input window_entity_time
               - condition: and
                 alias: Check temperature, sleeping and additional
                 conditions:
@@ -260,33 +266,42 @@ actions:
         sequence:
           - alias: Open or set position on cover
             if:
-              - condition: and
-                alias: Outside above maximum defined and sun still there
+              - condition: or
+                alias: Tilted or cover should be closed
                 conditions:
-                  - condition: sun
-                    after: sunrise
-                    after_offset: "02:00:00"
-                    before: sunset
-                    before_offset: !input sunset_offset
-                  - condition: numeric_state
-                    entity_id: !input outside_temperature_sensor
-                    above: !input outside_temperature_max
-                    alias: Outside above max input temperature
-                  - condition: or
-                    alias: Check weather condition
+                  - condition: state
+                    entity_id: !input window_entity
+                    state: Tilted
+                    alias: Window tilted
+                    for:
+                      seconds: !input window_entity_time
+                  - condition: and
+                    alias: Outside above maximum defined and sun still there
                     conditions:
-                      - condition: state
-                        entity_id: !input weather_entity
-                        state: "sunny"
-                        alias: Sunny
-                      - condition: state
-                        entity_id: !input weather_entity
-                        state: "partlycloudy"
-                        alias: Partly cloudy
-                      - condition: state
-                        entity_id: !input weather_entity
-                        state: "cloudy"
-                        alias: Cloudy
+                      - condition: sun
+                        after: sunrise
+                        after_offset: "02:00:00"
+                        before: sunset
+                        before_offset: !input sunset_offset
+                      - condition: numeric_state
+                        entity_id: !input outside_temperature_sensor
+                        above: !input outside_temperature_max
+                        alias: Outside above max input temperature
+                      - condition: or
+                        alias: Check weather condition
+                        conditions:
+                          - condition: state
+                            entity_id: !input weather_entity
+                            state: "sunny"
+                            alias: Sunny
+                          - condition: state
+                            entity_id: !input weather_entity
+                            state: "partlycloudy"
+                            alias: Partly cloudy
+                          - condition: state
+                            entity_id: !input weather_entity
+                            state: "cloudy"
+                            alias: Cloudy
             then:
               - action: cover.set_cover_position
                 metadata: { }
