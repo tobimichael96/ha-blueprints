@@ -269,12 +269,20 @@ actions:
               - condition: or
                 alias: Tilted or cover should be closed
                 conditions:
-                  - condition: state
-                    entity_id: !input window_entity
-                    state: Tilted
-                    alias: Window tilted
-                    for:
-                      seconds: !input window_entity_time
+                  - condition: and
+                    alias: Tilted and sleeping
+                    conditions:
+                      - condition: state
+                        entity_id: !input window_entity
+                        state: Tilted
+                        alias: Window tilted
+                        for:
+                          seconds: !input window_entity_time
+                      - condition: state
+                        entity_id: input_boolean.sleeping
+                        state: "on"
+                        enabled: !input check_sleeping
+                        alias: Sleeping on
                   - condition: and
                     alias: Outside above maximum defined and sun still there
                     conditions:
