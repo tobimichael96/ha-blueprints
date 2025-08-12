@@ -49,6 +49,12 @@ blueprint:
         entity:
           filter:
             - domain: weather
+    sunrise_offset:
+      name: Sunrise offset
+      description: Offset for the sunrise. Format should be "00:00:00".
+      default: "02:00:00"
+      selector:
+        text:
     sunset_offset:
       name: Sunset offset
       description: Offset for the sunset. Format should be "00:00:00".
@@ -131,6 +137,10 @@ triggers:
     event: sunset
     offset: !input sunset_offset
     id: sunset
+  - trigger: sun
+    event: sunrise
+    offset: !input sunrise_offset
+    id: sunrise
   - trigger: state
     entity_id:
       - input_boolean.sleeping
@@ -171,7 +181,7 @@ actions:
                 conditions:
                   - condition: sun
                     after: sunrise
-                    after_offset: "02:00:00"
+                    after_offset: !input sunrise_offset
                     before: sunset
                     before_offset: !input sunset_offset
                   - condition: numeric_state
@@ -250,7 +260,7 @@ actions:
                       - condition: sun
                         alias: After sunset (with offset)
                         before: sunrise
-                        before_offset: "02:00:00"
+                        before_offset: !input sunrise_offset
                         after: sunset
                         after_offset: !input sunset_offset
                   - condition: state
