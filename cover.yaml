@@ -298,7 +298,7 @@ actions:
                     conditions:
                       - condition: sun
                         after: sunrise
-                        after_offset: "02:00:00"
+                        after_offset: !input sunrise_offset
                         before: sunset
                         before_offset: !input sunset_offset
                       - condition: numeric_state
