@@ -214,7 +214,7 @@ actions:
               - action: cover.set_cover_position
                 metadata: { }
                 data:
-                  position: 65
+                  position: 55
                 target:
                   entity_id: !input room_cover
             else:
@@ -281,6 +281,7 @@ actions:
                 conditions:
                   - condition: and
                     alias: Tilted and sleeping
+                    enabled: !input check_sleeping
                     conditions:
                       - condition: state
                         entity_id: !input window_entity
@@ -324,7 +325,7 @@ actions:
               - action: cover.set_cover_position
                 metadata: { }
                 data:
-                  position: 65
+                  position: 55
                 target:
                   entity_id: !input room_cover
             else:
