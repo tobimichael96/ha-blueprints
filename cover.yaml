@@ -141,16 +141,6 @@ action:
                   - condition: state
                     entity_id: !input window_entity
                     state: "Tilted"
-                  - condition: not
-                    conditions:
-                      - condition: numeric_state
-                        entity_id: !input room_cover
-                        attribute: current_position
-                        above: 84
-                      - condition: numeric_state
-                        entity_id: !input room_cover
-                        attribute: current_position
-                        below: 86
                 sequence:
                   - service: cover.set_cover_position
                     target:
@@ -202,16 +192,6 @@ action:
                       - condition: state
                         entity_id: !input window_entity
                         state: "Tilted"
-                  - condition: not
-                    conditions:
-                      - condition: numeric_state
-                        entity_id: !input room_cover
-                        attribute: current_position
-                        above: 54
-                      - condition: numeric_state
-                        entity_id: !input room_cover
-                        attribute: current_position
-                        below: 56
                 sequence:
                   - service: cover.set_cover_position
                     target:
@@ -259,16 +239,6 @@ action:
                       - condition: state
                         entity_id: !input window_entity
                         state: "Tilted"
-                  - condition: not
-                    conditions:
-                      - condition: numeric_state
-                        entity_id: !input room_cover
-                        attribute: current_position
-                        above: 54
-                      - condition: numeric_state
-                        entity_id: !input room_cover
-                        attribute: current_position
-                        below: 56
                 sequence:
                   - service: cover.set_cover_position
                     target:
