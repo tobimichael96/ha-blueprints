@@ -214,7 +214,8 @@ action:
             entity_id: !input outside_temperature_sensor
             below: 0
           - condition: sun
-            below_horizon: true
+            before: sunrise
+            after: sunset
         sequence:
           - choose:
               - conditions:
