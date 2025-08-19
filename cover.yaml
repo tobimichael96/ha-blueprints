@@ -129,6 +129,10 @@ action:
                   - condition: state
                     entity_id: !input window_entity
                     state: "Closed"
+                  - condition: numeric_state
+                    entity_id: !input room_cover
+                    attribute: current_position
+                    above: 0
                 sequence:
                   - service: cover.close_cover
                     target:
@@ -137,6 +141,16 @@ action:
                   - condition: state
                     entity_id: !input window_entity
                     state: "Tilted"
+                  - condition: not
+                    conditions:
+                      - condition: numeric_state
+                        entity_id: !input room_cover
+                        attribute: current_position
+                        above: 84
+                      - condition: numeric_state
+                        entity_id: !input room_cover
+                        attribute: current_position
+                        below: 86
                 sequence:
                   - service: cover.set_cover_position
                     target:
@@ -147,6 +161,10 @@ action:
                   - condition: state
                     entity_id: !input window_entity
                     state: "Open"
+                  - condition: numeric_state
+                    entity_id: !input room_cover
+                    attribute: current_position
+                    below: 100
                 sequence:
                   - service: cover.open_cover
                     target:
@@ -184,6 +202,16 @@ action:
                       - condition: state
                         entity_id: !input window_entity
                         state: "Tilted"
+                  - condition: not
+                    conditions:
+                      - condition: numeric_state
+                        entity_id: !input room_cover
+                        attribute: current_position
+                        above: 54
+                      - condition: numeric_state
+                        entity_id: !input room_cover
+                        attribute: current_position
+                        below: 56
                 sequence:
                   - service: cover.set_cover_position
                     target:
@@ -195,6 +223,10 @@ action:
                   - conditions:
                       - condition: template
                         value_template: !input close_cover_to_position
+                      - condition: not
+                        conditions:
+                          - condition: template
+                            value_template: "{{ state_attr('cover.' + (device_attr(device_id('!input room_cover'), 'name') | lower | replace(' ', '_')), 'current_position') == !input close_cover_to_position_number }}"
                     sequence:
                       - service: cover.set_cover_position
                         target:
@@ -204,6 +236,10 @@ action:
                 default:
                   - condition: template
                     value_template: "{{ is_state('!input close_cover', 'true') }}"
+                  - condition: numeric_state
+                    entity_id: !input room_cover
+                    attribute: current_position
+                    above: 0
                   - service: cover.close_cover
                     target:
                       entity_id: !input room_cover
@@ -227,6 +263,16 @@ action:
                       - condition: state
                         entity_id: !input window_entity
                         state: "Tilted"
+                  - condition: not
+                    conditions:
+                      - condition: numeric_state
+                        entity_id: !input room_cover
+                        attribute: current_position
+                        above: 54
+                      - condition: numeric_state
+                        entity_id: !input room_cover
+                        attribute: current_position
+                        below: 56
                 sequence:
                   - service: cover.set_cover_position
                     target:
@@ -247,12 +293,20 @@ action:
                 default:
                   - condition: template
                     value_template: "{{ is_state('!input close_cover', 'true') }}"
+                  - condition: numeric_state
+                    entity_id: !input room_cover
+                    attribute: current_position
+                    above: 0
                   - service: cover.close_cover
                     target:
                       entity_id: !input room_cover
 
     # Default: Open cover for normal conditions
     default:
+      - condition: numeric_state
+        entity_id: !input room_cover
+        attribute: current_position
+        below: 100
       - service: cover.open_cover
         target:
           entity_id: !input room_cover
