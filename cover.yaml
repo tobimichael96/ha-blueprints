@@ -1,38 +1,53 @@
 blueprint:
-  name: Cover
-  description: Set position of cover based on position of the window, weather condition, temperature and the state of the sun.
+  name: Smart Cover Control
+  description: Automatically control cover based on window state, weather, temperature, and sleeping mode.
   domain: automation
   input:
     outside_temperature_sensor:
-      name: Outside temperature sensor
-      description: Sensor that gives the temperature from outside.
+      name: Outside Temperature Sensor
       selector:
         entity:
           filter:
             - domain: sensor
     outside_temperature_max:
-      name: Outside temperature maximum
-      description: Maximum outside temperature for closing the cover.
+      name: Maximum Temperature (°C)
+      description: Close cover when temperature exceeds this value
+      default: 25
       selector:
         number:
           min: 0
-          max: 30
+          max: 40
           unit_of_measurement: "°C"
-          mode: box
     room_cover:
-      name: Cover
-      description: Cover of the room.
+      name: Cover Entity
       selector:
         entity:
           filter:
             - domain: cover
     window_entity:
       name: Window Entity
-      description: Window entity that should be checked.
       selector:
         entity:
           filter:
             - domain: input_select
+    weather_entity:
+      name: Weather Entity
+      selector:
+        entity:
+          filter:
+            - domain: weather
+    sunrise_offset:
+      name: Sunrise Offset
+      description: Format should be "HH:MM:SS"
+      default: "02:00:00"
+      selector:
+        text:
+    sunset_offset:
+      name: Sunset Offset
+      description: Format should be "HH:MM:SS"
+      default: "01:00:00"
+      selector:
+        text:
     window_entity_time:
       name: Window Open Time
       description: Window entity open for (in seconds).
@@ -42,31 +57,6 @@ blueprint:
           min: 0
           max: 120
           mode: box
-    weather_entity:
-      name: Weather entity
-      description: Weather entity to check weather condition.
-      selector:
-        entity:
-          filter:
-            - domain: weather
-    sunrise_offset:
-      name: Sunrise offset
-      description: Offset for the sunrise. Format should be "00:00:00".
-      default: "02:00:00"
-      selector:
-        text:
-    sunset_offset:
-      name: Sunset offset
-      description: Offset for the sunset. Format should be "00:00:00".
-      default: "00:00:00"
-      selector:
-        text:
-    check_sleeping:
-      name: Check sleeping
-      description: Whether to check the sleeping condition or not.
-      default: true
-      selector:
-        boolean:
     close_cover:
       name: Close cover
       description: Whether to close the cover completely or not.
@@ -96,242 +86,156 @@ blueprint:
           value_template: "{{ true }}"
       selector:
         condition:
-    additional_triggers:
-      name: Additional triggers
-      default: [ ]
-      selector:
-        trigger:
 
 mode: restart
 
-triggers:
-  - trigger: state
-    entity_id:
-      - !input window_entity
-    id: window_open
-    to: Open
+trigger:
+  - platform: state
+    entity_id: !input window_entity
     for:
       seconds: !input window_entity_time
-  - trigger: state
-    entity_id:
-      - !input window_entity
-    id: window_tilted
-    to: Tilted
-    for:
-      seconds: !input window_entity_time
-  - trigger: state
-    entity_id:
-      - !input window_entity
-    to: Closed
-    id: window_closed
-  - trigger: numeric_state
-    entity_id:
-      - !input outside_temperature_sensor
-    below: 0
-  - trigger: numeric_state
-    entity_id:
-      - !input outside_temperature_sensor
+  - platform: state
+    entity_id: input_boolean.sleeping
+  - platform: numeric_state
+    entity_id: !input outside_temperature_sensor
     above: !input outside_temperature_max
-    id: above_outside_max
-  - trigger: sun
-    event: sunset
-    offset: !input sunset_offset
-    id: sunset
-  - trigger: sun
+  - platform: numeric_state
+    entity_id: !input outside_temperature_sensor
+    below: !input outside_temperature_max
+  - platform: sun
     event: sunrise
     offset: !input sunrise_offset
-    id: sunrise
+  - platform: sun
+    event: sunset
+    offset: !input sunset_offset
   - trigger: state
     entity_id:
       - input_boolean.sleeping
     id: sleeping
-  - triggers: !input additional_triggers
 
-actions:
+action:
   - choose:
+      # Priority 1: Sleeping mode - cover follows window state exactly
       - conditions:
-          - condition: not
-            alias: Window not open (closed or tilted)
-            conditions:
-              - condition: state
-                entity_id: !input window_entity
-                state: Open
+          - condition: state
+            entity_id: input_boolean.sleeping
+            state: "on"
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: state
+                    entity_id: !input window_entity
+                    state: Closed
+                sequence:
+                  - service: cover.close_cover
+                    target:
+                      entity_id: !input room_cover
+              - conditions:
+                  - condition: state
+                    entity_id: !input window_entity
+                    state: Tilted
+                sequence:
+                  - service: cover.set_cover_position
+                    target:
+                      entity_id: !input room_cover
+                    data:
+                      position: 15
+              - conditions:
+                  - condition: state
+                    entity_id: !input window_entity
+                    state: Open
+                sequence:
+                  - service: cover.open_cover
+                    target:
+                      entity_id: !input room_cover
+
+      # Priority 2: Hot sunny day during daytime - partial closure
+      - conditions:
+          - condition: sun
+            after: sunrise
+            after_offset: !input sunrise_offset
+            before: sunset
+            before_offset: !input sunset_offset
           - condition: numeric_state
-            entity_id: !input room_cover
-            attribute: current_position
-            above: 0
+            entity_id: !input outside_temperature_sensor
+            above: !input outside_temperature_max
           - condition: or
             conditions:
-              - condition: and
-                alias: Outside below 0 and sun is gone
-                conditions:
-                  - condition: numeric_state
-                    entity_id: !input outside_temperature_sensor
-                    below: 0
-                  - condition: sun
-                    before: sunrise
-                    after: sunset
               - condition: state
-                entity_id: input_boolean.sleeping
-                state: "on"
-                enabled: !input check_sleeping
-                alias: Sleeping on
-              - condition: and
-                alias: Outside above maximum defined and sun still there
-                conditions:
-                  - condition: sun
-                    after: sunrise
-                    after_offset: !input sunrise_offset
-                    before: sunset
-                    before_offset: !input sunset_offset
-                  - condition: numeric_state
-                    entity_id: !input outside_temperature_sensor
-                    above: !input outside_temperature_max
-                    alias: Outside above max input temperature
-                  - condition: or
-                    alias: Check weather condition
-                    conditions:
-                      - condition: state
-                        entity_id: !input weather_entity
-                        state: "sunny"
-                        alias: Sunny
-                      - condition: state
-                        entity_id: !input weather_entity
-                        state: "partlycloudy"
-                        alias: Partly cloudy
-                      - condition: state
-                        entity_id: !input weather_entity
-                        state: "cloudy"
-                        alias: Cloudy
+                entity_id: !input weather_entity
+                state: sunny
+              - condition: state
+                entity_id: !input weather_entity
+                state: partlycloudy
+              - condition: state
+                entity_id: !input weather_entity
+                state: cloudy
         sequence:
-          - alias: Close or set position on cover
-            enabled: !input close_cover
-            if:
-              - condition: state
-                entity_id: !input window_entity
-                state: Tilted
-            then:
-              - action: cover.set_cover_position
-                metadata: { }
-                data:
-                  position: 55
-                target:
-                  entity_id: !input room_cover
-            else:
-              - action: cover.close_cover
-                metadata: { }
-                data: { }
-                target:
-                  entity_id: !input room_cover
-          - action: cover.set_cover_position
-            metadata: { }
-            data:
-              position: !input close_cover_to_position_number
+          - service: cover.set_cover_position
             target:
               entity_id: !input room_cover
-            enabled: !input close_cover_to_position
-        alias: Close cover
+            data:
+              position: 55
+
+      # Priority 3: Window tilted (when not sleeping) - partial closure
       - conditions:
-          - alias: Window open or Sunset/Temperature
-            condition: or
-            conditions:
-              - condition: state
-                entity_id: !input window_entity
-                state: Open
-                alias: Window open
-                for:
-                  seconds: !input window_entity_time
-              - condition: state
-                entity_id: !input window_entity
-                state: Tilted
-                alias: Window tilted
-                for:
-                  seconds: !input window_entity_time
-              - condition: and
-                alias: Check temperature, sleeping and additional
-                conditions:
-                  - condition: or
-                    alias: Outside below maximum defined or sun gone
-                    conditions:
-                      - condition: numeric_state
-                        entity_id: !input outside_temperature_sensor
-                        below: !input outside_temperature_max
-                        alias: Outside below maximum defined
-                      - condition: sun
-                        alias: After sunset (with offset)
-                        before: sunrise
-                        before_offset: !input sunrise_offset
-                        after: sunset
-                        after_offset: !input sunset_offset
-                  - condition: state
-                    entity_id: input_boolean.sleeping
-                    state: "off"
-                    alias: Sleeping is off
-                  - condition: or
-                    conditions: !input additional_conditions
-          - condition: numeric_state
-            entity_id: !input room_cover
-            attribute: current_position
-            below: 100
+          - condition: state
+            entity_id: !input window_entity
+            state: Tilted
         sequence:
-          - alias: Open or set position on cover
-            if:
-              - condition: or
-                alias: Tilted or cover should be closed
-                conditions:
-                  - condition: and
-                    alias: Tilted and sleeping
-                    enabled: !input check_sleeping
-                    conditions:
-                      - condition: state
-                        entity_id: !input window_entity
-                        state: Tilted
-                        alias: Window tilted
-                        for:
-                          seconds: !input window_entity_time
-                      - condition: state
-                        entity_id: input_boolean.sleeping
-                        state: "on"
-                        enabled: !input check_sleeping
-                        alias: Sleeping on
-                  - condition: and
-                    alias: Outside above maximum defined and sun still there
-                    conditions:
-                      - condition: sun
-                        after: sunrise
-                        after_offset: !input sunrise_offset
-                        before: sunset
-                        before_offset: !input sunset_offset
-                      - condition: numeric_state
-                        entity_id: !input outside_temperature_sensor
-                        above: !input outside_temperature_max
-                        alias: Outside above max input temperature
-                      - condition: or
-                        alias: Check weather condition
-                        conditions:
-                          - condition: state
-                            entity_id: !input weather_entity
-                            state: "sunny"
-                            alias: Sunny
-                          - condition: state
-                            entity_id: !input weather_entity
-                            state: "partlycloudy"
-                            alias: Partly cloudy
-                          - condition: state
-                            entity_id: !input weather_entity
-                            state: "cloudy"
-                            alias: Cloudy
-            then:
-              - action: cover.set_cover_position
-                metadata: { }
-                data:
-                  position: 55
+          - service: cover.set_cover_position
+            target:
+              entity_id: !input room_cover
+            data:
+              position: 55
+
+      # Priority 4: Cold or nighttime - close cover based on settings
+      - conditions:
+          - condition: or
+            conditions:
+              - condition: numeric_state
+                entity_id: !input outside_temperature_sensor
+                below: 0
+              - condition: sun
+                before: sunrise
+                before_offset: !input sunrise_offset
+              - condition: sun
+                after: sunset
+                after_offset: !input sunset_offset
+        sequence:
+          - choose:
+              - conditions:
+                  - condition: template
+                    value_template: !input close_cover_to_position
+                sequence:
+                  - service: cover.set_cover_position
+                    target:
+                      entity_id: !input room_cover
+                    data:
+                      position: !input close_cover_to_position_number
+            default:
+              - condition: template
+                value_template: !input close_cover
+              - service: cover.close_cover
                 target:
                   entity_id: !input room_cover
-            else:
-              - action: cover.open_cover
-                metadata: { }
-                data: { }
-                target:
-                  entity_id: !input room_cover
-        alias: Open cover
+
+      # Priority 5: Window open with additional conditions - open cover
+      - conditions:
+          - condition: state
+            entity_id: !input window_entity
+            state: Open
+            for:
+              seconds: !input window_entity_time
+          - condition: or
+            conditions: !input additional_conditions
+        sequence:
+          - service: cover.open_cover
+            target:
+              entity_id: !input room_cover
+
+    # Default: Open cover for normal conditions
+    default:
+      - service: cover.open_cover
+        target:
+          entity_id: !input room_cover
