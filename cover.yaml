@@ -223,10 +223,6 @@ action:
                   - conditions:
                       - condition: template
                         value_template: !input close_cover_to_position
-                      - condition: not
-                        conditions:
-                          - condition: template
-                            value_template: "{{ state_attr('cover.' + (device_attr(device_id('!input room_cover'), 'name') | lower | replace(' ', '_')), 'current_position') == !input close_cover_to_position_number }}"
                     sequence:
                       - service: cover.set_cover_position
                         target:
