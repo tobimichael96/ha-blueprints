@@ -111,10 +111,6 @@ trigger:
   - platform: sun
     event: sunset
     offset: !input sunset_offset
-  - trigger: state
-    entity_id:
-      - input_boolean.sleeping
-    id: sleeping
 
 action:
   - choose:
