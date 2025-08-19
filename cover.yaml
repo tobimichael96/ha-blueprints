@@ -102,6 +102,9 @@ trigger:
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
     below: !input outside_temperature_max
+  - platform: numeric_state
+    entity_id: !input outside_temperature_sensor
+    below: 0
   - platform: sun
     event: sunrise
     offset: !input sunrise_offset
@@ -125,7 +128,7 @@ action:
               - conditions:
                   - condition: state
                     entity_id: !input window_entity
-                    state: Closed
+                    state: "Closed"
                 sequence:
                   - service: cover.close_cover
                     target:
@@ -133,7 +136,7 @@ action:
               - conditions:
                   - condition: state
                     entity_id: !input window_entity
-                    state: Tilted
+                    state: "Tilted"
                 sequence:
                   - service: cover.set_cover_position
                     target:
@@ -143,13 +146,13 @@ action:
               - conditions:
                   - condition: state
                     entity_id: !input window_entity
-                    state: Open
+                    state: "Open"
                 sequence:
                   - service: cover.open_cover
                     target:
                       entity_id: !input room_cover
 
-      # Priority 2: Hot sunny day during daytime - partial closure
+      # Priority 2: Hot sunny day during daytime
       - conditions:
           - condition: sun
             after: sunrise
@@ -163,76 +166,89 @@ action:
             conditions:
               - condition: state
                 entity_id: !input weather_entity
-                state: sunny
+                state: "sunny"
               - condition: state
                 entity_id: !input weather_entity
-                state: partlycloudy
+                state: "partlycloudy"
               - condition: state
                 entity_id: !input weather_entity
-                state: cloudy
-        sequence:
-          - service: cover.set_cover_position
-            target:
-              entity_id: !input room_cover
-            data:
-              position: 55
-
-      # Priority 3: Window tilted (when not sleeping) - partial closure
-      - conditions:
-          - condition: state
-            entity_id: !input window_entity
-            state: Tilted
-        sequence:
-          - service: cover.set_cover_position
-            target:
-              entity_id: !input room_cover
-            data:
-              position: 55
-
-      # Priority 4: Cold or nighttime - close cover based on settings
-      - conditions:
-          - condition: or
-            conditions:
-              - condition: numeric_state
-                entity_id: !input outside_temperature_sensor
-                below: 0
-              - condition: sun
-                before: sunrise
-                before_offset: !input sunrise_offset
-              - condition: sun
-                after: sunset
-                after_offset: !input sunset_offset
+                state: "cloudy"
         sequence:
           - choose:
               - conditions:
-                  - condition: template
-                    value_template: !input close_cover_to_position
+                  - condition: or
+                    conditions:
+                      - condition: state
+                        entity_id: !input window_entity
+                        state: "Open"
+                      - condition: state
+                        entity_id: !input window_entity
+                        state: "Tilted"
                 sequence:
                   - service: cover.set_cover_position
                     target:
                       entity_id: !input room_cover
                     data:
-                      position: !input close_cover_to_position_number
+                      position: 55
             default:
-              - condition: template
-                value_template: !input close_cover
-              - service: cover.close_cover
-                target:
-                  entity_id: !input room_cover
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: !input close_cover_to_position
+                    sequence:
+                      - service: cover.set_cover_position
+                        target:
+                          entity_id: !input room_cover
+                        data:
+                          position: !input close_cover_to_position_number
+                default:
+                  - condition: template
+                    value_template: "{{ is_state('!input close_cover', 'true') }}"
+                  - service: cover.close_cover
+                    target:
+                      entity_id: !input room_cover
 
-      # Priority 5: Window open with additional conditions - open cover
+      # Priority 3: Cold and sun is gone (below horizon)
       - conditions:
-          - condition: state
-            entity_id: !input window_entity
-            state: Open
-            for:
-              seconds: !input window_entity_time
-          - condition: or
-            conditions: !input additional_conditions
+          - condition: numeric_state
+            entity_id: !input outside_temperature_sensor
+            below: 0
+          - condition: sun
+            below_horizon: true
         sequence:
-          - service: cover.open_cover
-            target:
-              entity_id: !input room_cover
+          - choose:
+              - conditions:
+                  - condition: or
+                    conditions:
+                      - condition: state
+                        entity_id: !input window_entity
+                        state: "Open"
+                      - condition: state
+                        entity_id: !input window_entity
+                        state: "Tilted"
+                sequence:
+                  - service: cover.set_cover_position
+                    target:
+                      entity_id: !input room_cover
+                    data:
+                      position: 55
+            default:
+              - choose:
+                  - conditions:
+                      - condition: template
+                        value_template: !input close_cover_to_position
+                    sequence:
+                      - service: cover.set_cover_position
+                        target:
+                          entity_id: !input room_cover
+                        data:
+                          position: !input close_cover_to_position_number
+                default:
+                  - condition: template
+                    value_template: "{{ is_state('!input close_cover', 'true') }}"
+                  - service: cover.close_cover
+                    target:
+                      entity_id: !input room_cover
 
     # Default: Open cover for normal conditions
     default:
