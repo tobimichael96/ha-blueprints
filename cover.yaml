@@ -139,7 +139,7 @@ action:
                     target:
                       entity_id: !input room_cover
                     data:
-                      position: 15
+                      position: 85
               - conditions:
                   - condition: state
                     entity_id: !input window_entity
