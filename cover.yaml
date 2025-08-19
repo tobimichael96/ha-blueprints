@@ -211,7 +211,7 @@ action:
                           position: !input close_cover_to_position_number
                 default:
                   - condition: template
-                    value_template: "{{ is_state('!input close_cover', 'true') }}"
+                    value_template: !input close_cover
                   - condition: numeric_state
                     entity_id: !input room_cover
                     attribute: current_position
@@ -258,7 +258,7 @@ action:
                           position: !input close_cover_to_position_number
                 default:
                   - condition: template
-                    value_template: "{{ is_state('!input close_cover', 'true') }}"
+                    value_template: !input close_cover
                   - condition: numeric_state
                     entity_id: !input room_cover
                     attribute: current_position
