@@ -114,7 +114,7 @@ trigger:
 
 action:
   - choose:
-      # Priority 1: Sleeping mode - cover follows window state exactly
+      # Priority 1: Sleeping mode - cover follows window state
       - conditions:
           - condition: state
             entity_id: input_boolean.sleeping
@@ -134,19 +134,14 @@ action:
                     target:
                       entity_id: !input room_cover
               - conditions:
-                  - condition: state
-                    entity_id: !input window_entity
-                    state: "Tilted"
-                sequence:
-                  - service: cover.set_cover_position
-                    target:
-                      entity_id: !input room_cover
-                    data:
-                      position: 85
-              - conditions:
-                  - condition: state
-                    entity_id: !input window_entity
-                    state: "Open"
+                  - condition: or
+                    conditions:
+                      - condition: state
+                        entity_id: !input window_entity
+                        state: "Open"
+                      - condition: state
+                        entity_id: !input window_entity
+                        state: "Tilted"
                   - condition: numeric_state
                     entity_id: !input room_cover
                     attribute: current_position
