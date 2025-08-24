@@ -69,6 +69,12 @@ blueprint:
       default: false
       selector:
         boolean:
+    check_sleeping:
+      name: Check sleeping or not
+      description: Whether to check sleeping state or not.
+      default: true
+      selector:
+        boolean:
     close_cover_to_position_number:
       name: Close cover position
       description: Number to what the cover should be set when closed.
@@ -119,6 +125,8 @@ action:
           - condition: state
             entity_id: input_boolean.sleeping
             state: "on"
+          - condition: template
+            value_template: !input check_sleepin
         sequence:
           - choose:
               - conditions:
