@@ -126,7 +126,7 @@ action:
             entity_id: input_boolean.sleeping
             state: "on"
           - condition: template
-            value_template: !input check_sleepin
+            value_template: !input check_sleeping
         sequence:
           - choose:
               - conditions:
