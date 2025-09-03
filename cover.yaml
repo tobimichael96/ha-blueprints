@@ -41,8 +41,8 @@ blueprint:
       selector:
         entity:
           filter:
-            - domain: input_boolean
-      default: "input_boolean.sunshine"
+            - domain: binary_sensor
+      default: "binary_sensor.sunshine"
     sunrise_offset:
       name: Sunrise Offset
       description: Format should be "HH:MM:SS"
