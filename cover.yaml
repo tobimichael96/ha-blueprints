@@ -36,6 +36,13 @@ blueprint:
         entity:
           filter:
             - domain: weather
+    sunshine_entity:
+      name: Sunshine Entity
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
+      default: "input_boolean.sunshine"
     sunrise_offset:
       name: Sunrise Offset
       description: Format should be "HH:MM:SS"
@@ -117,6 +124,9 @@ trigger:
   - platform: sun
     event: sunset
     offset: !input sunset_offset
+  - platform: state
+    entity_id: !input sunshine_entity
+    to: "on"
 
 action:
   - choose:
@@ -169,6 +179,9 @@ action:
           - condition: numeric_state
             entity_id: !input outside_temperature_sensor
             above: !input outside_temperature_max
+          - condition: state
+            entity_id: !input sunshine_entity
+            state: "on"
           - condition: or
             conditions:
               - condition: state
