@@ -12,7 +12,16 @@ blueprint:
     outside_temperature_max:
       name: Maximum Temperature (°C)
       description: Close cover when temperature exceeds this value
-      default: 25
+      default: 22
+      selector:
+        number:
+          min: 0
+          max: 40
+          unit_of_measurement: "°C"
+    outside_temperature_min:
+      name: Minimum Temperature (°C)
+      description: Open cover when temperature drops below this value
+      default: 20
       selector:
         number:
           min: 0
@@ -114,7 +123,7 @@ trigger:
     above: !input outside_temperature_max
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
-    below: !input outside_temperature_max
+    below: !input outside_temperature_min
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
     below: 0
@@ -232,7 +241,26 @@ action:
                     target:
                       entity_id: !input room_cover
 
-      # Priority 3: Cold and sun is gone (below horizon)
+      # Priority 3: Normal temperature range - open cover
+      - conditions:
+          - condition: numeric_state
+            entity_id: !input outside_temperature_sensor
+            above: !input outside_temperature_min
+          - condition: numeric_state
+            entity_id: !input outside_temperature_sensor
+            below: !input outside_temperature_max
+          - condition: or
+            conditions: !input additional_conditions
+        sequence:
+          - condition: numeric_state
+            entity_id: !input room_cover
+            attribute: current_position
+            below: 100
+          - service: cover.open_cover
+            target:
+              entity_id: !input room_cover
+
+      # Priority 4: Cold and sun is gone (below horizon)
       - conditions:
           - condition: numeric_state
             entity_id: !input outside_temperature_sensor
