@@ -38,8 +38,8 @@ blueprint:
           unit_of_measurement: "°"
     sun_azimuth_min:
       name: Minimum Sun Azimuth (°)
-      description: Minimum sun azimuth angle (South direction)
-      default: 160
+      description: Minimum sun azimuth angle (when sun starts hitting windows)
+      default: 150
       selector:
         number:
           min: 0
@@ -47,8 +47,8 @@ blueprint:
           unit_of_measurement: "°"
     sun_azimuth_max:
       name: Maximum Sun Azimuth (°)
-      description: Maximum sun azimuth angle (West direction)
-      default: 280
+      description: Maximum sun azimuth angle (when sun stops hitting windows)
+      default: 240
       selector:
         number:
           min: 0
