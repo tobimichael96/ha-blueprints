@@ -27,6 +27,33 @@ blueprint:
           min: 0
           max: 40
           unit_of_measurement: "°C"
+    sun_elevation_min:
+      name: Minimum Sun Elevation (°)
+      description: Minimum sun elevation angle to trigger hot day conditions
+      default: 15
+      selector:
+        number:
+          min: 0
+          max: 90
+          unit_of_measurement: "°"
+    sun_azimuth_min:
+      name: Minimum Sun Azimuth (°)
+      description: Minimum sun azimuth angle (South direction)
+      default: 160
+      selector:
+        number:
+          min: 0
+          max: 360
+          unit_of_measurement: "°"
+    sun_azimuth_max:
+      name: Maximum Sun Azimuth (°)
+      description: Maximum sun azimuth angle (West direction)
+      default: 280
+      selector:
+        number:
+          min: 0
+          max: 360
+          unit_of_measurement: "°"
     room_cover:
       name: Cover Entity
       selector:
@@ -127,12 +154,30 @@ trigger:
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
     below: 0
-  - platform: sun
-    event: sunrise
-    offset: !input sunrise_offset
-  - platform: sun
-    event: sunset
-    offset: !input sunset_offset
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: elevation
+    above: !input sun_elevation_min
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: elevation
+    below: !input sun_elevation_min
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: azimuth
+    above: !input sun_azimuth_min
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: azimuth
+    below: !input sun_azimuth_min
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: azimuth
+    above: !input sun_azimuth_max
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: azimuth
+    below: !input sun_azimuth_max
   - platform: state
     entity_id: !input sunshine_entity
     to: "on"
@@ -180,11 +225,18 @@ action:
 
       # Priority 2: Hot sunny day during daytime
       - conditions:
-          - condition: sun
-            after: sunrise
-            after_offset: !input sunrise_offset
-            before: sunset
-            before_offset: !input sunset_offset
+          - condition: numeric_state
+            entity_id: sun.sun
+            attribute: elevation
+            above: !input sun_elevation_min
+          - condition: numeric_state
+            entity_id: sun.sun
+            attribute: azimuth
+            above: !input sun_azimuth_min
+          - condition: numeric_state
+            entity_id: sun.sun
+            attribute: azimuth
+            below: !input sun_azimuth_max
           - condition: numeric_state
             entity_id: !input outside_temperature_sensor
             above: !input outside_temperature_max
