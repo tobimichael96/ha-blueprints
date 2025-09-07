@@ -79,18 +79,6 @@ blueprint:
           filter:
             - domain: binary_sensor
       default: "binary_sensor.sunshine"
-    sunrise_offset:
-      name: Sunrise Offset
-      description: Format should be "HH:MM:SS"
-      default: "02:00:00"
-      selector:
-        text:
-    sunset_offset:
-      name: Sunset Offset
-      description: Format should be "HH:MM:SS"
-      default: "01:00:00"
-      selector:
-        text:
     window_entity_time:
       name: Window Open Time
       description: Window entity open for (in seconds).
@@ -154,33 +142,12 @@ trigger:
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
     below: 0
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: elevation
-    above: !input sun_elevation_min
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: elevation
-    below: !input sun_elevation_min
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: azimuth
-    above: !input sun_azimuth_min
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: azimuth
-    below: !input sun_azimuth_min
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: azimuth
-    above: !input sun_azimuth_max
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: azimuth
-    below: !input sun_azimuth_max
   - platform: state
     entity_id: !input sunshine_entity
     to: "on"
+  - platform: state
+    entity_id: !input sunshine_entity
+    to: "off"
 
 action:
   - choose:
@@ -312,14 +279,15 @@ action:
             target:
               entity_id: !input room_cover
 
-      # Priority 4: Cold and sun is gone (below horizon)
+      # Priority 4: Cold nighttime - close cover
       - conditions:
           - condition: numeric_state
             entity_id: !input outside_temperature_sensor
             below: 0
-          - condition: sun
-            before: sunrise
-            after: sunset
+          - condition: numeric_state
+            entity_id: sun.sun
+            attribute: elevation
+            below: 0
         sequence:
           - choose:
               - conditions:
