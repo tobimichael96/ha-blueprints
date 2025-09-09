@@ -155,11 +155,20 @@ trigger:
   - platform: numeric_state
     entity_id: sun.sun
     attribute: azimuth
+    above: !input sun_azimuth_min
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: azimuth
     below: !input sun_azimuth_min
   - platform: numeric_state
     entity_id: sun.sun
     attribute: azimuth
     above: !input sun_azimuth_max
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: azimuth
+    below: !input sun_azimuth_max
+
 
 action:
   - choose:
