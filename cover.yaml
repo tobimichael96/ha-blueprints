@@ -184,12 +184,12 @@ action:
               - conditions:
                   - condition: or
                     conditions:
-                  		- condition: state
-                    		entity_id: !input window_entity
-                    		state: "Closed"
-                      - condition: state
-                        entity_id: !input window_entity
-                        state: "Tilted"
+											- condition: state
+												entity_id: !input window_entity
+												state: "Closed"
+											- condition: state
+												entity_id: !input window_entity
+												state: "Tilted"
                   - condition: numeric_state
                     entity_id: !input room_cover
                     attribute: current_position
