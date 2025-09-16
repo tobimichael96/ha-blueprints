@@ -311,15 +311,27 @@ action:
                     target:
                       entity_id: !input room_cover
 
-    # Default: Open cover when temperature below minimum
+    # Default: Open cover for normal conditions
     default:
-      - condition: numeric_state
-        entity_id: !input outside_temperature_sensor
-        below: !input outside_temperature_min
+      - condition: or
+        conditions:
+          - condition: numeric_state
+            entity_id: !input outside_temperature_sensor
+            below: !input outside_temperature_min
+          - condition: or
+            conditions:
+              - condition: state
+                entity_id: !input window_entity
+                state: "Open"
+              - condition: state
+                entity_id: !input window_entity
+                state: "Tilted"
       - condition: numeric_state
         entity_id: !input room_cover
         attribute: current_position
         below: 100
+      - condition: or
+        conditions: !input additional_conditions
       - service: cover.open_cover
         target:
           entity_id: !input room_cover
