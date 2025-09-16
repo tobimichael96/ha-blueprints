@@ -1,6 +1,6 @@
 blueprint:
   name: Smart Cover Control
-  description: Automatically control cover based on window state, weather, temperature, and sleeping mode.
+  description: Automatically control cover based on window state, temperature, and sleeping mode.
   domain: automation
   input:
     outside_temperature_sensor:
@@ -66,12 +66,6 @@ blueprint:
         entity:
           filter:
             - domain: input_select
-    weather_entity:
-      name: Weather Entity
-      selector:
-        entity:
-          filter:
-            - domain: weather
     sunshine_entity:
       name: Sunshine Entity
       selector:
@@ -168,7 +162,6 @@ trigger:
     entity_id: sun.sun
     attribute: azimuth
     below: !input sun_azimuth_max
-
 
 action:
   - choose:
