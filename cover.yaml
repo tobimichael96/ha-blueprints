@@ -21,7 +21,7 @@ blueprint:
     outside_temperature_min:
       name: Minimum Temperature (°C)
       description: Open cover when temperature drops below this value
-      default: 20
+      default: 18
       selector:
         number:
           min: 0
