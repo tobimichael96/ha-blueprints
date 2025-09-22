@@ -9,6 +9,15 @@ blueprint:
         entity:
           filter:
             - domain: sensor
+      default: "sensor.outdoor_temperature"
+    indoor_temperature_sensor:
+      name: Indoor Temperature Sensor
+      description: Median temperature of rooms with windows
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+      default: "sensor.indoor_temperature"
     outside_temperature_max:
       name: Maximum Temperature (°C)
       description: Close cover when temperature exceeds this value
@@ -137,6 +146,8 @@ trigger:
     entity_id: !input outside_temperature_sensor
     below: 0
   - platform: state
+    entity_id: !input indoor_temperature_sensor
+  - platform: state
     entity_id: !input sunshine_entity
     to: "on"
   - platform: state
@@ -221,6 +232,10 @@ action:
           - condition: numeric_state
             entity_id: !input outside_temperature_sensor
             above: !input outside_temperature_max
+          - condition: numeric_state
+            entity_id: !input outside_temperature_sensor
+            value_template: "{{ float(state.state) + 3 }}"
+            above: !input indoor_temperature_sensor
           - condition: state
             entity_id: !input sunshine_entity
             state: "on"
