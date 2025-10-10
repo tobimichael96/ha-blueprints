@@ -192,6 +192,8 @@ action:
             state: "on"
           - condition: template
             value_template: !input check_sleeping
+          - condition: or
+            conditions: !input additional_conditions
         sequence:
           - choose:
               - conditions:
