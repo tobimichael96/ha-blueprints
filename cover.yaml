@@ -109,6 +109,15 @@ blueprint:
       default: true
       selector:
         boolean:
+    close_cover_to_position_when_sleeping_and_tilted_number:
+      name: Close cover position when sleeping and tilted
+      description: Number to what the cover should be set when tilted and sleeping is on.
+      default: 100
+      selector:
+        number:
+          min: 0
+          max: 100
+          mode: box
     close_cover_to_position_number:
       name: Close cover position
       description: Number to what the cover should be set when closed.
@@ -186,14 +195,9 @@ action:
         sequence:
           - choose:
               - conditions:
-                  - condition: or
-                    conditions:
-                      - condition: state
-                        entity_id: !input window_entity
-                        state: "Closed"
-                      - condition: state
-                        entity_id: !input window_entity
-                        state: "Tilted"
+                  - condition: state
+                    entity_id: !input window_entity
+                    state: "Closed"
                   - condition: numeric_state
                     entity_id: !input room_cover
                     attribute: current_position
@@ -202,6 +206,16 @@ action:
                   - service: cover.close_cover
                     target:
                       entity_id: !input room_cover
+              - conditions:
+                  - condition: state
+                    entity_id: !input window_entity
+                    state: "Tilted"
+                sequence:
+                  - service: cover.set_cover_position
+                    target:
+                      entity_id: !input room_cover
+                    data:
+                      position: !input close_cover_to_position_when_sleeping_and_tilted_number
               - conditions:
                   - condition: state
                     entity_id: !input window_entity
