@@ -112,7 +112,7 @@ blueprint:
     close_cover_to_position_when_sleeping_and_tilted_number:
       name: Close cover position when sleeping and tilted
       description: Number to what the cover should be set when tilted and sleeping is on.
-      default: 100
+      default: 0
       selector:
         number:
           min: 0
