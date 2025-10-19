@@ -91,6 +91,14 @@ blueprint:
           min: 0
           max: 120
           mode: box
+    sleeping_entity:
+      name: (Pre-)Sleeping Entity
+      description: (Pre-)Sleeping entity to monitor
+      default: "input_boolean.pre_sleeping"
+      selector:
+        entity:
+          filter:
+            - domain: input_boolean
     close_cover:
       name: Close cover
       description: Whether to close the cover completely or not.
@@ -144,7 +152,7 @@ trigger:
     for:
       seconds: !input window_entity_time
   - platform: state
-    entity_id: input_boolean.sleeping
+    entity_id: !input sleeping_entity
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
     above: !input outside_temperature_max
@@ -188,7 +196,7 @@ action:
       # Priority 1: Sleeping mode - cover follows window state
       - conditions:
           - condition: state
-            entity_id: input_boolean.sleeping
+            entity_id: !input sleeping_entity
             state: "on"
           - condition: template
             value_template: !input check_sleeping
