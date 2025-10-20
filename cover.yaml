@@ -92,9 +92,9 @@ blueprint:
           max: 120
           mode: box
     sleeping_entity:
-      name: (Pre-)Sleeping Entity
-      description: (Pre-)Sleeping entity to monitor
-      default: "input_boolean.pre_sleeping"
+      name: Sleeping Entity
+      description: Sleeping entity to monitor
+      default: "input_boolean.sleeping"
       selector:
         entity:
           filter:
