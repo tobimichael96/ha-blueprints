@@ -163,8 +163,6 @@ trigger:
     entity_id: !input outside_temperature_sensor
     below: 0
   - platform: state
-    entity_id: !input indoor_temperature_sensor
-  - platform: state
     entity_id: !input sunshine_entity
     to: "on"
   - platform: state
