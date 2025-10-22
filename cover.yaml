@@ -135,6 +135,12 @@ blueprint:
           min: 0
           max: 100
           mode: box
+    additional_trigger:
+      name: Additional triggers
+      description: Additional triggers for the automation.
+      default:
+      selector:
+        trigger:
     additional_conditions_closing:
       name: Additional conditions for closing
       description: Additional conditions for closing cover.
@@ -155,6 +161,7 @@ blueprint:
 mode: restart
 
 trigger:
+  - triggers: !input additional_trigger
   - platform: state
     entity_id: !input window_entity
     for:
