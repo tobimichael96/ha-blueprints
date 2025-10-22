@@ -207,7 +207,7 @@ action:
           - condition: template
             value_template: !input check_sleeping
           - condition: and
-            conditions: !input additional_conditions
+            conditions: !input additional_conditions_closing
         sequence:
           - choose:
               - conditions:
