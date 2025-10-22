@@ -135,6 +135,14 @@ blueprint:
           min: 0
           max: 100
           mode: box
+    additional_conditions_closing:
+      name: Additional conditions for closing
+      description: Additional conditions for closing cover.
+      default:
+        - condition: template
+          value_template: "{{ true }}"
+      selector:
+        condition:
     additional_conditions:
       name: Additional conditions
       description: Additional conditions for opening cover.
@@ -198,6 +206,8 @@ action:
             state: "on"
           - condition: template
             value_template: !input check_sleeping
+          - condition: and
+            conditions: !input additional_conditions
         sequence:
           - choose:
               - conditions:
