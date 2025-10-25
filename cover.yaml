@@ -400,6 +400,16 @@ action:
         attribute: current_position
         below: 100
       - condition: or
+        conditions:
+          - condition: numeric_state
+            entity_id: !input room_cover
+            attribute: current_position
+            below: !input close_cover_to_position_when_sleeping_and_tilted_number
+          - condition: numeric_state
+            entity_id: !input room_cover
+            attribute: current_position
+            below: !input close_cover_to_position
+      - condition: or
         conditions: !input additional_conditions
       - service: cover.open_cover
         target:
