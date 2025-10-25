@@ -408,7 +408,12 @@ action:
           - condition: numeric_state
             entity_id: !input room_cover
             attribute: current_position
-            below: !input close_cover_to_position
+            below: !input close_cover_to_position_number
+          - condition: numeric_state
+            entity_id: !input room_cover
+            attribute: current_position
+            above: 54
+            below: 56
       - condition: or
         conditions: !input additional_conditions
       - service: cover.open_cover
