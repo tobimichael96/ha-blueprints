@@ -158,6 +158,11 @@ blueprint:
       selector:
         condition:
 
+variables:
+  close_cover_to_position_when_sleeping_and_tilted_number: !input close_cover_to_position_when_sleeping_and_tilted_number
+  close_cover_to_position_number: !input close_cover_to_position_number
+  room_cover: !input room_cover
+
 mode: restart
 
 trigger:
@@ -401,16 +406,10 @@ action:
         below: 100
       - condition: or
         conditions:
-          - condition: numeric_state
-            entity_id: !input room_cover
-            attribute: current_position
-            below: !input close_cover_to_position_when_sleeping_and_tilted_number
-            value_template: "{{ float(state.state) - 1 }}"
-          - condition: numeric_state
-            entity_id: !input room_cover
-            attribute: current_position
-            below: !input close_cover_to_position_number
-            value_template: "{{ float(state.state) - 1 }}"
+          - condition: template
+            value_template: "{{ state_attr(room_cover, 'current_position') | int(100) <= close_cover_to_position_when_sleeping_and_tilted_number | int }}"
+          - condition: template
+            value_template: "{{ state_attr(room_cover, 'current_position') | int(100) <= close_cover_to_position_number | int }}"
           - condition: numeric_state
             entity_id: !input room_cover
             attribute: current_position
