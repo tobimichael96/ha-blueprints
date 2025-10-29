@@ -162,6 +162,8 @@ variables:
   close_cover_to_position_when_sleeping_and_tilted_number: !input close_cover_to_position_when_sleeping_and_tilted_number
   close_cover_to_position_number: !input close_cover_to_position_number
   room_cover: !input room_cover
+  sleeping_entity: !input sleeping_entity
+  check_sleeping: !input check_sleeping
 
 mode: restart
 
@@ -400,6 +402,9 @@ action:
                 entity_id: sun.sun
                 attribute: azimuth
                 above: !input sun_azimuth_max
+      - condition: template
+        value_template: >
+          {{ not (is_state(sleeping_entity, 'on') and check_sleeping) }}
       - condition: numeric_state
         entity_id: !input room_cover
         attribute: current_position
