@@ -220,8 +220,6 @@ action:
             state: "on"
           - condition: template
             value_template: !input check_sleeping
-          - condition: and
-            conditions: !input additional_conditions_closing
         sequence:
           - choose:
               - conditions:
@@ -232,6 +230,8 @@ action:
                     entity_id: !input room_cover
                     attribute: current_position
                     above: 0
+                  - condition: and
+                    conditions: !input additional_conditions_closing
                 sequence:
                   - service: cover.close_cover
                     target:
@@ -240,6 +240,8 @@ action:
                   - condition: state
                     entity_id: !input window_entity
                     state: "Tilted"
+                  - condition: and
+                    conditions: !input additional_conditions_closing
                 sequence:
                   - service: cover.set_cover_position
                     target:
