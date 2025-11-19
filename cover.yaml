@@ -183,7 +183,7 @@ trigger:
     below: !input outside_temperature_min
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
-    below: 0
+    below: 2
   - platform: state
     entity_id: !input sunshine_entity
     to: "on"
@@ -194,6 +194,10 @@ trigger:
     entity_id: sun.sun
     attribute: elevation
     above: !input sun_elevation_min
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: elevation
+    below: 0
   - platform: numeric_state
     entity_id: sun.sun
     attribute: azimuth
@@ -328,7 +332,7 @@ action:
       - conditions:
           - condition: numeric_state
             entity_id: !input outside_temperature_sensor
-            below: 0
+            below: 2
           - condition: numeric_state
             entity_id: sun.sun
             attribute: elevation
