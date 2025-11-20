@@ -135,6 +135,12 @@ blueprint:
           min: 0
           max: 100
           mode: box
+    check_cold_outside:
+      name: Check cold outside or not
+      description: Whether to check cold temperature state or not.
+      default: false
+      selector:
+        boolean:
     additional_trigger:
       name: Additional triggers
       description: Additional triggers for the automation.
@@ -337,6 +343,8 @@ action:
             entity_id: sun.sun
             attribute: elevation
             below: 0
+          - condition: template
+            value_template: !input check_cold_outside
         sequence:
           - choose:
               - conditions:
