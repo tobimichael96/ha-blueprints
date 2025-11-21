@@ -203,7 +203,7 @@ trigger:
   - platform: numeric_state
     entity_id: sun.sun
     attribute: elevation
-    below: 0
+    below: -5
   - platform: numeric_state
     entity_id: sun.sun
     attribute: azimuth
@@ -342,7 +342,7 @@ action:
           - condition: numeric_state
             entity_id: sun.sun
             attribute: elevation
-            below: 0
+            below: -5
           - condition: template
             value_template: !input check_cold_outside
         sequence:
