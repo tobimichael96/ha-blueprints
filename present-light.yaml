@@ -34,7 +34,7 @@ blueprint:
       default: [ ]
       selector:
         condition:
-    condition_off:
+    condition_off_and:
       name: Condition Off And
       description: Additional AND conditions for turning off the devices.
       default: [ ]
