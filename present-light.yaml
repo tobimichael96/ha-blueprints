@@ -37,7 +37,9 @@ blueprint:
     condition_off_and:
       name: Condition Off And
       description: Additional AND conditions for turning off the devices.
-      default: [ ]
+      default:
+        - condition: template
+          value_template: "{{ true }}"
       selector:
         condition:
     no_occupancy_wait:
