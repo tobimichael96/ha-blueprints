@@ -34,6 +34,12 @@ blueprint:
       default: [ ]
       selector:
         condition:
+    condition_off:
+      name: Condition Off And
+      description: Additional AND conditions for turning off the devices.
+      default: [ ]
+      selector:
+        condition:
     no_occupancy_wait:
       name: Wait time
       description: Wait time for turning off the light/switch.
@@ -79,11 +85,15 @@ actions:
                 conditions: !input condition_on_or
         sequence: !input actions_on
       - conditions:
-          - condition: and
+          - condition: or
             conditions:
-              - condition: state
-                entity_id: !input occupied_binary_sensor
-                state: "off"
+              - condition: and
+                conditions:
+                - condition: state
+                  entity_id: !input occupied_binary_sensor
+                  state: "off"
+                - condition: or
+                  conditions: !input condition_off_and
               - condition: or
                 conditions: !input condition_off
         sequence:
