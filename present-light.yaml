@@ -79,7 +79,7 @@ actions:
                 conditions: !input condition_on_or
         sequence: !input actions_on
       - conditions:
-          - condition: or
+          - condition: and
             conditions:
               - condition: state
                 entity_id: !input occupied_binary_sensor
