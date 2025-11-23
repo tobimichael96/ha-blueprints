@@ -31,7 +31,9 @@ blueprint:
     condition_off:
       name: Condition Off
       description: Additional conditions for turning off the devices.
-      default: [ ]
+      default:
+        - condition: template
+          value_template: "{{ false }}"
       selector:
         condition:
     condition_off_and:
