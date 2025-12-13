@@ -144,23 +144,31 @@ blueprint:
     additional_trigger:
       name: Additional triggers
       description: Additional triggers for the automation.
-      default:
+      default: []
       selector:
         trigger:
+    use_additional_conditions_closing:
+      name: Use additional closing conditions
+      description: Enable additional conditions for closing the cover.
+      default: false
+      selector:
+        boolean:
     additional_conditions_closing:
       name: Additional conditions for closing
-      description: Additional conditions for closing cover.
-      default:
-        - condition: template
-          value_template: "{{ true }}"
+      description: Additional conditions that must be met for closing cover.
+      default: []
       selector:
         condition:
-    additional_conditions:
-      name: Additional conditions
-      description: Additional conditions for opening cover.
-      default:
-        - condition: template
-          value_template: "{{ true }}"
+    use_additional_conditions_opening:
+      name: Use additional opening conditions
+      description: Enable additional conditions for opening the cover.
+      default: false
+      selector:
+        boolean:
+    additional_conditions_opening:
+      name: Additional conditions for opening
+      description: Additional conditions that must be met for opening cover.
+      default: []
       selector:
         condition:
 
@@ -170,108 +178,160 @@ variables:
   room_cover: !input room_cover
   sleeping_entity: !input sleeping_entity
   check_sleeping: !input check_sleeping
+  close_cover: !input close_cover
+  close_cover_to_position: !input close_cover_to_position
+  check_cold_outside: !input check_cold_outside
+  use_additional_conditions_closing: !input use_additional_conditions_closing
+  use_additional_conditions_opening: !input use_additional_conditions_opening
 
-mode: restart
+  current_position: "{{ state_attr(room_cover, 'current_position') | int(0) }}"
+  is_sleeping: "{{ is_state(sleeping_entity, 'on') and check_sleeping }}"
+
+  window_entity: !input window_entity
+  outside_temp_sensor: !input outside_temperature_sensor
+  indoor_temp_sensor: !input indoor_temperature_sensor
+  outside_temp_max: !input outside_temperature_max
+  outside_temp_min: !input outside_temperature_min
+  sun_elev_min: !input sun_elevation_min
+  sun_az_min: !input sun_azimuth_min
+  sun_az_max: !input sun_azimuth_max
+  sunshine_entity: !input sunshine_entity
+
+mode: single
+max_exceeded: silent
 
 trigger:
-  - triggers: !input additional_trigger
   - platform: state
     entity_id: !input window_entity
     for:
       seconds: !input window_entity_time
+    id: window_changed
+
   - platform: state
     entity_id: !input sleeping_entity
+    id: sleeping_changed
+
+  - platform: state
+    entity_id: !input sunshine_entity
+    for:
+      minutes: 5
+    id: sunshine_changed
+
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
     above: !input outside_temperature_max
+    for:
+      minutes: 10
+    id: temp_above_max
+
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
     below: !input outside_temperature_min
+    for:
+      minutes: 10
+    id: temp_below_min
+
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
     below: 3
-  - platform: state
-    entity_id: !input sunshine_entity
-    to: "on"
-  - platform: state
-    entity_id: !input sunshine_entity
-    to: "off"
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: elevation
-    above: !input sun_elevation_min
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: elevation
-    below: -15
+    for:
+      minutes: 10
+    id: temp_freezing
+
   - platform: numeric_state
     entity_id: sun.sun
     attribute: azimuth
     above: !input sun_azimuth_min
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: azimuth
-    below: !input sun_azimuth_min
+    id: sun_enters_window
+
   - platform: numeric_state
     entity_id: sun.sun
     attribute: azimuth
     above: !input sun_azimuth_max
+    id: sun_leaves_window
+
   - platform: numeric_state
     entity_id: sun.sun
-    attribute: azimuth
-    below: !input sun_azimuth_max
+    attribute: elevation
+    above: !input sun_elevation_min
+    id: sun_high_enough
+
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: elevation
+    below: -10
+    id: sun_well_below_horizon
+
+  - triggers: !input additional_trigger
+    id: additional
 
 action:
   - choose:
-      # Priority 1: Sleeping mode - cover follows window state
+      # ============================================
+      # PRIORITY 1: Sleeping mode
+      # ============================================
       - conditions:
-          - condition: state
-            entity_id: !input sleeping_entity
-            state: "on"
           - condition: template
-            value_template: !input check_sleeping
+            value_template: "{{ is_sleeping }}"
         sequence:
           - choose:
+              # Sleeping + Window Closed → Close cover fully
               - conditions:
                   - condition: state
                     entity_id: !input window_entity
                     state: "Closed"
+                sequence:
                   - condition: numeric_state
                     entity_id: !input room_cover
                     attribute: current_position
                     above: 0
-                  - condition: and
-                    conditions: !input additional_conditions_closing
-                sequence:
+                  - condition: or
+                    conditions:
+                      - condition: template
+                        value_template: "{{ not use_additional_conditions_closing }}"
+                      - condition: and
+                        conditions: !input additional_conditions_closing
                   - service: cover.close_cover
                     target:
                       entity_id: !input room_cover
+
+              # Sleeping + Window Tilted → Partial close
               - conditions:
                   - condition: state
                     entity_id: !input window_entity
                     state: "Tilted"
-                  - condition: and
-                    conditions: !input additional_conditions_closing
                 sequence:
+                  - condition: template
+                    value_template: "{{ current_position != close_cover_to_position_when_sleeping_and_tilted_number }}"
+                  - condition: or
+                    conditions:
+                      - condition: template
+                        value_template: "{{ not use_additional_conditions_closing }}"
+                      - condition: and
+                        conditions: !input additional_conditions_closing
                   - service: cover.set_cover_position
                     target:
                       entity_id: !input room_cover
                     data:
-                      position: !input close_cover_to_position_when_sleeping_and_tilted_number
+                      position: "{{ close_cover_to_position_when_sleeping_and_tilted_number }}"
+
+              # Sleeping + Window Open → Open cover
               - conditions:
                   - condition: state
                     entity_id: !input window_entity
                     state: "Open"
+                sequence:
                   - condition: numeric_state
                     entity_id: !input room_cover
                     attribute: current_position
                     below: 100
-                sequence:
                   - service: cover.open_cover
                     target:
                       entity_id: !input room_cover
 
-      # Priority 2: Hot sunny day during daytime
+      # ============================================
+      # PRIORITY 2: Hot sunny day
+      # ============================================
       - conditions:
           - condition: numeric_state
             entity_id: sun.sun
@@ -288,15 +348,16 @@ action:
           - condition: numeric_state
             entity_id: !input outside_temperature_sensor
             above: !input outside_temperature_max
-          - condition: numeric_state
-            entity_id: !input outside_temperature_sensor
-            value_template: "{{ float(state.state) + 3 }}"
-            above: !input indoor_temperature_sensor
           - condition: state
             entity_id: !input sunshine_entity
             state: "on"
+          - condition: template
+            value_template: >
+              {{ states(outside_temp_sensor) | float(0) > 
+                 states(indoor_temp_sensor) | float(100) - 3 }}
         sequence:
           - choose:
+              # Window open/tilted during hot day → partial close
               - conditions:
                   - condition: or
                     conditions:
@@ -307,25 +368,43 @@ action:
                         entity_id: !input window_entity
                         state: "Tilted"
                 sequence:
+                  - condition: template
+                    value_template: "{{ current_position != 55 }}"
+                  - condition: or
+                    conditions:
+                      - condition: template
+                        value_template: "{{ not use_additional_conditions_closing }}"
+                      - condition: and
+                        conditions: !input additional_conditions_closing
                   - service: cover.set_cover_position
                     target:
                       entity_id: !input room_cover
                     data:
                       position: 55
+
+            # Window closed during hot day → close cover
             default:
+              - condition: or
+                conditions:
+                  - condition: template
+                    value_template: "{{ not use_additional_conditions_closing }}"
+                  - condition: and
+                    conditions: !input additional_conditions_closing
               - choose:
                   - conditions:
                       - condition: template
-                        value_template: !input close_cover_to_position
+                        value_template: "{{ close_cover_to_position }}"
                     sequence:
+                      - condition: template
+                        value_template: "{{ current_position != close_cover_to_position_number }}"
                       - service: cover.set_cover_position
                         target:
                           entity_id: !input room_cover
                         data:
-                          position: !input close_cover_to_position_number
+                          position: "{{ close_cover_to_position_number }}"
                 default:
                   - condition: template
-                    value_template: !input close_cover
+                    value_template: "{{ close_cover }}"
                   - condition: numeric_state
                     entity_id: !input room_cover
                     attribute: current_position
@@ -334,19 +413,22 @@ action:
                     target:
                       entity_id: !input room_cover
 
-      # Priority 3: Cold nighttime - close cover
+      # ============================================
+      # PRIORITY 3: Cold night
+      # ============================================
       - conditions:
+          - condition: template
+            value_template: "{{ check_cold_outside }}"
           - condition: numeric_state
             entity_id: !input outside_temperature_sensor
             below: 3
           - condition: numeric_state
             entity_id: sun.sun
             attribute: elevation
-            below: -15
-          - condition: template
-            value_template: !input check_cold_outside
+            below: -10
         sequence:
           - choose:
+              # Window open/tilted during cold night → partial close
               - conditions:
                   - condition: or
                     conditions:
@@ -357,25 +439,42 @@ action:
                         entity_id: !input window_entity
                         state: "Tilted"
                 sequence:
+                  - condition: template
+                    value_template: "{{ current_position != 55 }}"
+                  - condition: or
+                    conditions:
+                      - condition: template
+                        value_template: "{{ not use_additional_conditions_closing }}"
+                      - condition: and
+                        conditions: !input additional_conditions_closing
                   - service: cover.set_cover_position
                     target:
                       entity_id: !input room_cover
                     data:
                       position: 55
+
             default:
+              - condition: or
+                conditions:
+                  - condition: template
+                    value_template: "{{ not use_additional_conditions_closing }}"
+                  - condition: and
+                    conditions: !input additional_conditions_closing
               - choose:
                   - conditions:
                       - condition: template
-                        value_template: !input close_cover_to_position
+                        value_template: "{{ close_cover_to_position }}"
                     sequence:
+                      - condition: template
+                        value_template: "{{ current_position != close_cover_to_position_number }}"
                       - service: cover.set_cover_position
                         target:
                           entity_id: !input room_cover
                         data:
-                          position: !input close_cover_to_position_number
+                          position: "{{ close_cover_to_position_number }}"
                 default:
                   - condition: template
-                    value_template: !input close_cover
+                    value_template: "{{ close_cover }}"
                   - condition: numeric_state
                     entity_id: !input room_cover
                     attribute: current_position
@@ -384,13 +483,20 @@ action:
                     target:
                       entity_id: !input room_cover
 
-    # Default: Open cover for normal conditions
+    # ============================================
+    # DEFAULT: Open cover
+    # ============================================
     default:
+      - condition: template
+        value_template: "{{ not is_sleeping }}"
+
+      - condition: numeric_state
+        entity_id: !input room_cover
+        attribute: current_position
+        below: 100
+
       - condition: or
         conditions:
-          - condition: numeric_state
-            entity_id: !input outside_temperature_sensor
-            below: !input outside_temperature_min
           - condition: or
             conditions:
               - condition: state
@@ -399,43 +505,33 @@ action:
               - condition: state
                 entity_id: !input window_entity
                 state: "Tilted"
-          - condition: state
-            entity_id: !input sunshine_entity
-            state: "off"
-          - condition: numeric_state
-            entity_id: sun.sun
-            attribute: elevation
-            below: !input sun_elevation_min
-          - condition: or
+
+          - condition: and
             conditions:
               - condition: numeric_state
-                entity_id: sun.sun
-                attribute: azimuth
-                below: !input sun_azimuth_min
-              - condition: numeric_state
-                entity_id: sun.sun
-                attribute: azimuth
-                above: !input sun_azimuth_max
-      - condition: template
-        value_template: >
-          {{ not (is_state(sleeping_entity, 'on') and check_sleeping) }}
-      - condition: numeric_state
-        entity_id: !input room_cover
-        attribute: current_position
-        below: 100
+                entity_id: !input outside_temperature_sensor
+                below: !input outside_temperature_min
+              - condition: or
+                conditions:
+                  - condition: numeric_state
+                    entity_id: sun.sun
+                    attribute: azimuth
+                    above: !input sun_azimuth_max
+                  - condition: numeric_state
+                    entity_id: sun.sun
+                    attribute: azimuth
+                    below: !input sun_azimuth_min
+                  - condition: state
+                    entity_id: !input sunshine_entity
+                    state: "off"
+
       - condition: or
         conditions:
           - condition: template
-            value_template: "{{ state_attr(room_cover, 'current_position') | int(100) <= close_cover_to_position_when_sleeping_and_tilted_number | int }}"
-          - condition: template
-            value_template: "{{ state_attr(room_cover, 'current_position') | int(100) <= close_cover_to_position_number | int }}"
-          - condition: numeric_state
-            entity_id: !input room_cover
-            attribute: current_position
-            above: 54
-            below: 56
-      - condition: or
-        conditions: !input additional_conditions
+            value_template: "{{ not use_additional_conditions_opening }}"
+          - condition: and
+            conditions: !input additional_conditions_opening
+
       - service: cover.open_cover
         target:
           entity_id: !input room_cover
