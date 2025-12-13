@@ -143,8 +143,10 @@ blueprint:
         boolean:
     additional_trigger:
       name: Additional triggers
-      description: Additional triggers for the automation.
-      default: []
+      description: Additional triggers for the automation. Leave default if not needed.
+      default:
+        - platform: template
+          value_template: "{{ false }}"
       selector:
         trigger:
     use_additional_conditions_closing:
@@ -183,10 +185,10 @@ variables:
   check_cold_outside: !input check_cold_outside
   use_additional_conditions_closing: !input use_additional_conditions_closing
   use_additional_conditions_opening: !input use_additional_conditions_opening
-
+  
   current_position: "{{ state_attr(room_cover, 'current_position') | int(0) }}"
   is_sleeping: "{{ is_state(sleeping_entity, 'on') and check_sleeping }}"
-
+  
   window_entity: !input window_entity
   outside_temp_sensor: !input outside_temperature_sensor
   indoor_temp_sensor: !input indoor_temperature_sensor
@@ -489,12 +491,12 @@ action:
     default:
       - condition: template
         value_template: "{{ not is_sleeping }}"
-
+      
       - condition: numeric_state
         entity_id: !input room_cover
         attribute: current_position
         below: 100
-
+      
       - condition: or
         conditions:
           - condition: or
@@ -505,7 +507,7 @@ action:
               - condition: state
                 entity_id: !input window_entity
                 state: "Tilted"
-
+          
           - condition: and
             conditions:
               - condition: numeric_state
@@ -524,14 +526,14 @@ action:
                   - condition: state
                     entity_id: !input sunshine_entity
                     state: "off"
-
+      
       - condition: or
         conditions:
           - condition: template
             value_template: "{{ not use_additional_conditions_opening }}"
           - condition: and
             conditions: !input additional_conditions_opening
-
+      
       - service: cover.open_cover
         target:
           entity_id: !input room_cover
