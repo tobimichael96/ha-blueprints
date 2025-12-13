@@ -143,10 +143,8 @@ blueprint:
         boolean:
     additional_trigger:
       name: Additional triggers
-      description: Additional triggers for the automation. Leave default if not needed.
+      description: Additional triggers for the automation.
       default:
-        - platform: template
-          value_template: "{{ false }}"
       selector:
         trigger:
     use_additional_conditions_closing:
@@ -185,10 +183,10 @@ variables:
   check_cold_outside: !input check_cold_outside
   use_additional_conditions_closing: !input use_additional_conditions_closing
   use_additional_conditions_opening: !input use_additional_conditions_opening
-  
+
   current_position: "{{ state_attr(room_cover, 'current_position') | int(0) }}"
   is_sleeping: "{{ is_state(sleeping_entity, 'on') and check_sleeping }}"
-  
+
   window_entity: !input window_entity
   outside_temp_sensor: !input outside_temperature_sensor
   indoor_temp_sensor: !input indoor_temperature_sensor
@@ -203,69 +201,58 @@ mode: single
 max_exceeded: silent
 
 trigger:
+  - triggers: !input additional_trigger
   - platform: state
     entity_id: !input window_entity
     for:
       seconds: !input window_entity_time
     id: window_changed
-
   - platform: state
     entity_id: !input sleeping_entity
     id: sleeping_changed
-
   - platform: state
     entity_id: !input sunshine_entity
     for:
       minutes: 5
     id: sunshine_changed
-
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
     above: !input outside_temperature_max
     for:
       minutes: 10
     id: temp_above_max
-
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
     below: !input outside_temperature_min
     for:
       minutes: 10
     id: temp_below_min
-
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
     below: 3
     for:
       minutes: 10
     id: temp_freezing
-
   - platform: numeric_state
     entity_id: sun.sun
     attribute: azimuth
     above: !input sun_azimuth_min
     id: sun_enters_window
-
   - platform: numeric_state
     entity_id: sun.sun
     attribute: azimuth
     above: !input sun_azimuth_max
     id: sun_leaves_window
-
   - platform: numeric_state
     entity_id: sun.sun
     attribute: elevation
     above: !input sun_elevation_min
     id: sun_high_enough
-
   - platform: numeric_state
     entity_id: sun.sun
     attribute: elevation
     below: -10
     id: sun_well_below_horizon
-
-  - triggers: !input additional_trigger
-    id: additional
 
 action:
   - choose:
