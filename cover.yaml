@@ -171,6 +171,22 @@ blueprint:
       default: []
       selector:
         condition:
+    last_automation_change_helper:
+      name: Last Automation Change Helper
+      description: input_datetime helper to track when automation last moved the cover (create one per cover)
+      selector:
+        entity:
+          filter:
+            - domain: input_datetime
+    manual_override_duration:
+      name: Manual Override Duration (minutes)
+      description: How long to respect manual changes before automation resumes
+      default: 120
+      selector:
+        number:
+          min: 5
+          max: 480
+          unit_of_measurement: "min"
 
 variables:
   close_cover_to_position_when_sleeping_and_tilted_number: !input close_cover_to_position_when_sleeping_and_tilted_number
@@ -183,9 +199,26 @@ variables:
   check_cold_outside: !input check_cold_outside
   use_additional_conditions_closing: !input use_additional_conditions_closing
   use_additional_conditions_opening: !input use_additional_conditions_opening
+  last_automation_change_helper: !input last_automation_change_helper
+  manual_override_duration: !input manual_override_duration
 
   current_position: "{{ state_attr(room_cover, 'current_position') | int(0) }}"
   is_sleeping: "{{ is_state(sleeping_entity, 'on') and check_sleeping }}"
+
+  # Manual override detection
+  is_manual_override: >
+    {% set last_auto_state = states(last_automation_change_helper) %}
+    {% if last_auto_state in ['unknown', 'unavailable', 'None', ''] %}
+      false
+    {% else %}
+      {% set last_auto_ts = as_timestamp(last_auto_state, default=0) %}
+      {% set cover_changed_ts = as_timestamp(states[room_cover].last_changed, default=0) %}
+      {% set override_seconds = manual_override_duration * 60 %}
+      {% set now_ts = now().timestamp() %}
+      {% set was_manual = cover_changed_ts > (last_auto_ts + 10) %}
+      {% set still_in_override = (now_ts - cover_changed_ts) < override_seconds %}
+      {{ was_manual and still_in_override }}
+    {% endif %}
 
   window_entity: !input window_entity
   outside_temp_sensor: !input outside_temperature_sensor
@@ -254,6 +287,11 @@ trigger:
     below: -10
     id: sun_well_below_horizon
 
+condition:
+  # Global condition: respect manual overrides
+  - condition: template
+    value_template: "{{ not is_manual_override }}"
+
 action:
   - choose:
       # ============================================
@@ -283,6 +321,11 @@ action:
                   - service: cover.close_cover
                     target:
                       entity_id: !input room_cover
+                  - service: input_datetime.set_datetime
+                    target:
+                      entity_id: !input last_automation_change_helper
+                    data:
+                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
 
               # Sleeping + Window Tilted → Partial close
               - conditions:
@@ -303,6 +346,11 @@ action:
                       entity_id: !input room_cover
                     data:
                       position: "{{ close_cover_to_position_when_sleeping_and_tilted_number }}"
+                  - service: input_datetime.set_datetime
+                    target:
+                      entity_id: !input last_automation_change_helper
+                    data:
+                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
 
               # Sleeping + Window Open → Open cover
               - conditions:
@@ -317,6 +365,11 @@ action:
                   - service: cover.open_cover
                     target:
                       entity_id: !input room_cover
+                  - service: input_datetime.set_datetime
+                    target:
+                      entity_id: !input last_automation_change_helper
+                    data:
+                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
 
       # ============================================
       # PRIORITY 2: Hot sunny day
@@ -370,6 +423,11 @@ action:
                       entity_id: !input room_cover
                     data:
                       position: 55
+                  - service: input_datetime.set_datetime
+                    target:
+                      entity_id: !input last_automation_change_helper
+                    data:
+                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
 
             # Window closed during hot day → close cover
             default:
@@ -391,6 +449,11 @@ action:
                           entity_id: !input room_cover
                         data:
                           position: "{{ close_cover_to_position_number }}"
+                      - service: input_datetime.set_datetime
+                        target:
+                          entity_id: !input last_automation_change_helper
+                        data:
+                          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
                 default:
                   - condition: template
                     value_template: "{{ close_cover }}"
@@ -401,6 +464,11 @@ action:
                   - service: cover.close_cover
                     target:
                       entity_id: !input room_cover
+                  - service: input_datetime.set_datetime
+                    target:
+                      entity_id: !input last_automation_change_helper
+                    data:
+                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
 
       # ============================================
       # PRIORITY 3: Cold night
@@ -441,6 +509,11 @@ action:
                       entity_id: !input room_cover
                     data:
                       position: 55
+                  - service: input_datetime.set_datetime
+                    target:
+                      entity_id: !input last_automation_change_helper
+                    data:
+                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
 
             default:
               - condition: or
@@ -461,6 +534,11 @@ action:
                           entity_id: !input room_cover
                         data:
                           position: "{{ close_cover_to_position_number }}"
+                      - service: input_datetime.set_datetime
+                        target:
+                          entity_id: !input last_automation_change_helper
+                        data:
+                          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
                 default:
                   - condition: template
                     value_template: "{{ close_cover }}"
@@ -471,6 +549,11 @@ action:
                   - service: cover.close_cover
                     target:
                       entity_id: !input room_cover
+                  - service: input_datetime.set_datetime
+                    target:
+                      entity_id: !input last_automation_change_helper
+                    data:
+                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
 
     # ============================================
     # DEFAULT: Open cover
@@ -478,12 +561,12 @@ action:
     default:
       - condition: template
         value_template: "{{ not is_sleeping }}"
-      
+
       - condition: numeric_state
         entity_id: !input room_cover
         attribute: current_position
         below: 100
-      
+
       - condition: or
         conditions:
           - condition: or
@@ -494,7 +577,7 @@ action:
               - condition: state
                 entity_id: !input window_entity
                 state: "Tilted"
-          
+
           - condition: and
             conditions:
               - condition: numeric_state
@@ -513,14 +596,19 @@ action:
                   - condition: state
                     entity_id: !input sunshine_entity
                     state: "off"
-      
+
       - condition: or
         conditions:
           - condition: template
             value_template: "{{ not use_additional_conditions_opening }}"
           - condition: and
             conditions: !input additional_conditions_opening
-      
+
       - service: cover.open_cover
         target:
           entity_id: !input room_cover
+      - service: input_datetime.set_datetime
+        target:
+          entity_id: !input last_automation_change_helper
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
