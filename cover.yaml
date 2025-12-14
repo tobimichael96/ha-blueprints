@@ -215,7 +215,7 @@ variables:
       {% set cover_changed_ts = as_timestamp(states[room_cover].last_changed, default=0) %}
       {% set override_seconds = manual_override_duration * 60 %}
       {% set now_ts = now().timestamp() %}
-      {% set was_manual = cover_changed_ts > (last_auto_ts + 10) %}
+      {% set was_manual = cover_changed_ts > (last_auto_ts + 15) %}
       {% set still_in_override = (now_ts - cover_changed_ts) < override_seconds %}
       {{ was_manual and still_in_override }}
     {% endif %}
@@ -288,9 +288,13 @@ trigger:
     id: sun_well_below_horizon
 
 condition:
-  # Global condition: respect manual overrides
-  - condition: template
-    value_template: "{{ not is_manual_override }}"
+  # Global condition: respect manual overrides, but sleeping mode always takes priority
+  - condition: or
+    conditions:
+      - condition: template
+        value_template: "{{ not is_manual_override }}"
+      - condition: template
+        value_template: "{{ is_sleeping }}"
 
 action:
   - choose:
