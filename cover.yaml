@@ -187,6 +187,15 @@ blueprint:
           min: 5
           max: 480
           unit_of_measurement: "min"
+    cover_state_delay:
+      name: Cover State Delay (seconds)
+      description: How long to wait for cover state to update before setting helper timestamp (depends on device polling)
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 30
+          unit_of_measurement: "s"
 
 variables:
   close_cover_to_position_when_sleeping_and_tilted_number: !input close_cover_to_position_when_sleeping_and_tilted_number
@@ -201,6 +210,7 @@ variables:
   use_additional_conditions_opening: !input use_additional_conditions_opening
   last_automation_change_helper: !input last_automation_change_helper
   manual_override_duration: !input manual_override_duration
+  cover_state_delay: !input cover_state_delay
 
   current_position: "{{ state_attr(room_cover, 'current_position') | int(0) }}"
   is_sleeping: "{{ is_state(sleeping_entity, 'on') and check_sleeping }}"
@@ -325,6 +335,8 @@ action:
                   - service: cover.close_cover
                     target:
                       entity_id: !input room_cover
+                  - delay:
+                      seconds: !input cover_state_delay
                   - service: input_datetime.set_datetime
                     target:
                       entity_id: !input last_automation_change_helper
@@ -350,6 +362,8 @@ action:
                       entity_id: !input room_cover
                     data:
                       position: "{{ close_cover_to_position_when_sleeping_and_tilted_number }}"
+                  - delay:
+                      seconds: !input cover_state_delay
                   - service: input_datetime.set_datetime
                     target:
                       entity_id: !input last_automation_change_helper
@@ -369,6 +383,8 @@ action:
                   - service: cover.open_cover
                     target:
                       entity_id: !input room_cover
+                  - delay:
+                      seconds: !input cover_state_delay
                   - service: input_datetime.set_datetime
                     target:
                       entity_id: !input last_automation_change_helper
@@ -427,6 +443,8 @@ action:
                       entity_id: !input room_cover
                     data:
                       position: 55
+                  - delay:
+                      seconds: !input cover_state_delay
                   - service: input_datetime.set_datetime
                     target:
                       entity_id: !input last_automation_change_helper
@@ -453,6 +471,8 @@ action:
                           entity_id: !input room_cover
                         data:
                           position: "{{ close_cover_to_position_number }}"
+                      - delay:
+                          seconds: !input cover_state_delay
                       - service: input_datetime.set_datetime
                         target:
                           entity_id: !input last_automation_change_helper
@@ -468,6 +488,8 @@ action:
                   - service: cover.close_cover
                     target:
                       entity_id: !input room_cover
+                  - delay:
+                      seconds: !input cover_state_delay
                   - service: input_datetime.set_datetime
                     target:
                       entity_id: !input last_automation_change_helper
@@ -513,6 +535,8 @@ action:
                       entity_id: !input room_cover
                     data:
                       position: 55
+                  - delay:
+                      seconds: !input cover_state_delay
                   - service: input_datetime.set_datetime
                     target:
                       entity_id: !input last_automation_change_helper
@@ -538,6 +562,8 @@ action:
                           entity_id: !input room_cover
                         data:
                           position: "{{ close_cover_to_position_number }}"
+                      - delay:
+                          seconds: !input cover_state_delay
                       - service: input_datetime.set_datetime
                         target:
                           entity_id: !input last_automation_change_helper
@@ -553,6 +579,8 @@ action:
                   - service: cover.close_cover
                     target:
                       entity_id: !input room_cover
+                  - delay:
+                      seconds: !input cover_state_delay
                   - service: input_datetime.set_datetime
                     target:
                       entity_id: !input last_automation_change_helper
@@ -611,6 +639,8 @@ action:
       - service: cover.open_cover
         target:
           entity_id: !input room_cover
+      - delay:
+          seconds: !input cover_state_delay
       - service: input_datetime.set_datetime
         target:
           entity_id: !input last_automation_change_helper
