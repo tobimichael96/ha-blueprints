@@ -1,68 +1,8 @@
 blueprint:
   name: Smart Cover Control
-  description: Automatically control cover based on window state, temperature, and sleeping mode.
+  description: Automatically control cover based on window state, temperature, and sleeping mode. Calculates target position and restores when window closes.
   domain: automation
   input:
-    outside_temperature_sensor:
-      name: Outside Temperature Sensor
-      selector:
-        entity:
-          filter:
-            - domain: sensor
-      default: "sensor.outdoor_temperature"
-    indoor_temperature_sensor:
-      name: Indoor Temperature Sensor
-      description: Median temperature of rooms with windows
-      selector:
-        entity:
-          filter:
-            - domain: sensor
-      default: "sensor.indoor_temperature"
-    outside_temperature_max:
-      name: Maximum Temperature (°C)
-      description: Close cover when temperature exceeds this value
-      default: 22
-      selector:
-        number:
-          min: 0
-          max: 40
-          unit_of_measurement: "°C"
-    outside_temperature_min:
-      name: Minimum Temperature (°C)
-      description: Open cover when temperature drops below this value
-      default: 19
-      selector:
-        number:
-          min: 0
-          max: 40
-          unit_of_measurement: "°C"
-    sun_elevation_min:
-      name: Minimum Sun Elevation (°)
-      description: Minimum sun elevation angle to trigger hot day conditions
-      default: 15
-      selector:
-        number:
-          min: 0
-          max: 90
-          unit_of_measurement: "°"
-    sun_azimuth_min:
-      name: Minimum Sun Azimuth (°)
-      description: Minimum sun azimuth angle (when sun starts hitting windows)
-      default: 150
-      selector:
-        number:
-          min: 0
-          max: 360
-          unit_of_measurement: "°"
-    sun_azimuth_max:
-      name: Maximum Sun Azimuth (°)
-      description: Maximum sun azimuth angle (when sun stops hitting windows)
-      default: 240
-      selector:
-        number:
-          min: 0
-          max: 360
-          unit_of_measurement: "°"
     room_cover:
       name: Cover Entity
       selector:
@@ -75,22 +15,29 @@ blueprint:
         entity:
           filter:
             - domain: input_select
-    sunshine_entity:
-      name: Sunshine Entity
-      selector:
-        entity:
-          filter:
-            - domain: binary_sensor
-      default: "binary_sensor.sunshine"
     window_entity_time:
-      name: Window Open Time
-      description: Window entity open for (in seconds).
+      name: Window State Delay
+      description: How long window must be in new state before triggering (seconds)
       default: 1
       selector:
         number:
           min: 0
           max: 120
           mode: box
+    saved_position_helper:
+      name: Target Position Helper
+      description: input_number helper to store target cover position (create one per cover)
+      selector:
+        entity:
+          filter:
+            - domain: input_number
+    last_automation_change_helper:
+      name: Last Automation Change Helper
+      description: input_datetime helper to track when automation last moved the cover (create one per cover)
+      selector:
+        entity:
+          filter:
+            - domain: input_datetime
     sleeping_entity:
       name: Sleeping Entity
       description: Sleeping entity to monitor
@@ -99,36 +46,81 @@ blueprint:
         entity:
           filter:
             - domain: input_boolean
-    close_cover:
-      name: Close cover
-      description: Whether to close the cover completely or not.
-      default: true
-      selector:
-        boolean:
-    close_cover_to_position:
-      name: Close cover to position
-      description: Whether to close the cover to a position or not.
-      default: false
-      selector:
-        boolean:
     check_sleeping:
-      name: Check sleeping or not
-      description: Whether to check sleeping state or not.
+      name: Check sleeping
+      description: Whether to react to sleeping state
       default: true
       selector:
         boolean:
     close_cover_to_position_when_sleeping_and_tilted_number:
-      name: Close cover position when sleeping and tilted
-      description: Number to what the cover should be set when tilted and sleeping is on.
+      name: Cover position when sleeping and tilted
+      description: Position when window is tilted and sleeping mode is on
       default: 0
       selector:
         number:
           min: 0
           max: 100
           mode: box
+    outside_temperature_sensor:
+      name: Outside Temperature Sensor
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+      default: "sensor.outdoor_temperature"
+    indoor_temperature_sensor:
+      name: Indoor Temperature Sensor
+      selector:
+        entity:
+          filter:
+            - domain: sensor
+      default: "sensor.indoor_temperature"
+    sunshine_entity:
+      name: Sunshine Entity
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
+      default: "binary_sensor.sunshine"
+    outside_temperature_max:
+      name: Hot Day Temperature (°C)
+      description: Temperature above which hot day logic activates
+      default: 22
+      selector:
+        number:
+          min: 0
+          max: 40
+          unit_of_measurement: "°C"
+    sun_elevation_min:
+      name: Minimum Sun Elevation (°)
+      description: Minimum sun elevation for hot day conditions
+      default: 15
+      selector:
+        number:
+          min: 0
+          max: 90
+          unit_of_measurement: "°"
+    sun_azimuth_min:
+      name: Minimum Sun Azimuth (°)
+      description: Sun azimuth when sun starts hitting windows
+      default: 150
+      selector:
+        number:
+          min: 0
+          max: 360
+          unit_of_measurement: "°"
+    sun_azimuth_max:
+      name: Maximum Sun Azimuth (°)
+      description: Sun azimuth when sun stops hitting windows
+      default: 240
+      selector:
+        number:
+          min: 0
+          max: 360
+          unit_of_measurement: "°"
     close_cover_to_position_number:
-      name: Close cover position
-      description: Number to what the cover should be set when closed.
+      name: Hot Day Cover Position
+      description: Cover position during hot sunny day (0 = closed, 100 = open)
       default: 10
       selector:
         number:
@@ -136,48 +128,38 @@ blueprint:
           max: 100
           mode: box
     check_cold_outside:
-      name: Check cold outside or not
-      description: Whether to check cold temperature state or not.
+      name: Check cold nights
+      description: Whether to close cover on cold nights
       default: false
       selector:
         boolean:
-    additional_trigger:
-      name: Additional triggers
-      description: Additional triggers for the automation.
-      default:
+    cold_temperature_threshold:
+      name: Cold Night Temperature (°C)
+      description: Temperature below which cold night logic activates
+      default: 3
       selector:
-        trigger:
-    use_additional_conditions_closing:
-      name: Use additional closing conditions
-      description: Enable additional conditions for closing the cover.
-      default: false
+        number:
+          min: -10
+          max: 15
+          unit_of_measurement: "°C"
+    window_open_position:
+      name: Window Open Position
+      description: Cover position when window is fully open (normal conditions)
+      default: 100
       selector:
-        boolean:
-    additional_conditions_closing:
-      name: Additional conditions for closing
-      description: Additional conditions that must be met for closing cover.
-      default: []
+        number:
+          min: 0
+          max: 100
+          mode: box
+    window_open_position_hot_or_cold:
+      name: Window Open Position (Hot/Cold)
+      description: Cover position when window is open during hot day or cold night (partial shade)
+      default: 55
       selector:
-        condition:
-    use_additional_conditions_opening:
-      name: Use additional opening conditions
-      description: Enable additional conditions for opening the cover.
-      default: false
-      selector:
-        boolean:
-    additional_conditions_opening:
-      name: Additional conditions for opening
-      description: Additional conditions that must be met for opening cover.
-      default: []
-      selector:
-        condition:
-    last_automation_change_helper:
-      name: Last Automation Change Helper
-      description: input_datetime helper to track when automation last moved the cover (create one per cover)
-      selector:
-        entity:
-          filter:
-            - domain: input_datetime
+        number:
+          min: 0
+          max: 100
+          mode: box
     manual_override_duration:
       name: Manual Override Duration (minutes)
       description: How long to respect manual changes before automation resumes
@@ -187,33 +169,86 @@ blueprint:
           min: 5
           max: 480
           unit_of_measurement: "min"
-    cover_state_delay:
-      name: Cover State Delay (seconds)
-      description: How long to wait for cover state to update before setting helper timestamp (depends on device polling)
-      default: 5
+    additional_trigger:
+      name: Additional triggers
+      description: Additional triggers for the automation
+      default:
       selector:
-        number:
-          min: 1
-          max: 30
-          unit_of_measurement: "s"
+        trigger:
 
 variables:
-  close_cover_to_position_when_sleeping_and_tilted_number: !input close_cover_to_position_when_sleeping_and_tilted_number
-  close_cover_to_position_number: !input close_cover_to_position_number
   room_cover: !input room_cover
+  window_entity: !input window_entity
+  saved_position_helper: !input saved_position_helper
+  last_automation_change_helper: !input last_automation_change_helper
   sleeping_entity: !input sleeping_entity
   check_sleeping: !input check_sleeping
-  close_cover: !input close_cover
-  close_cover_to_position: !input close_cover_to_position
+  close_cover_to_position_when_sleeping_and_tilted_number: !input close_cover_to_position_when_sleeping_and_tilted_number
+  outside_temp_sensor: !input outside_temperature_sensor
+  indoor_temp_sensor: !input indoor_temperature_sensor
+  sunshine_entity: !input sunshine_entity
+  outside_temp_max: !input outside_temperature_max
+  sun_elev_min: !input sun_elevation_min
+  sun_az_min: !input sun_azimuth_min
+  sun_az_max: !input sun_azimuth_max
+  close_cover_to_position_number: !input close_cover_to_position_number
   check_cold_outside: !input check_cold_outside
-  use_additional_conditions_closing: !input use_additional_conditions_closing
-  use_additional_conditions_opening: !input use_additional_conditions_opening
-  last_automation_change_helper: !input last_automation_change_helper
+  cold_temperature_threshold: !input cold_temperature_threshold
+  window_open_position: !input window_open_position
+  window_open_position_hot_or_cold: !input window_open_position_hot_or_cold
   manual_override_duration: !input manual_override_duration
-  cover_state_delay: !input cover_state_delay
 
   current_position: "{{ state_attr(room_cover, 'current_position') | int(0) }}"
+  saved_position: "{{ states(saved_position_helper) | int(100) }}"
+  window_state: "{{ states(window_entity) }}"
+  window_is_open: "{{ window_state in ['Open', 'Tilted'] }}"
   is_sleeping: "{{ is_state(sleeping_entity, 'on') and check_sleeping }}"
+
+  # Condition checks
+  is_hot_day: >
+    {{ state_attr('sun.sun', 'elevation') | float(0) > sun_elev_min | float
+       and state_attr('sun.sun', 'azimuth') | float(0) > sun_az_min | float
+       and state_attr('sun.sun', 'azimuth') | float(0) < sun_az_max | float
+       and states(outside_temp_sensor) | float(0) > outside_temp_max | float
+       and is_state(sunshine_entity, 'on')
+       and states(outside_temp_sensor) | float(0) > (states(indoor_temp_sensor) | float(100) - 3) }}
+
+  is_cold_night: >
+    {{ check_cold_outside
+       and states(outside_temp_sensor) | float(0) < cold_temperature_threshold | float
+       and state_attr('sun.sun', 'elevation') | float(0) < -10 }}
+
+  # Calculate target position (what cover should be when window is closed)
+  target_position: >
+    {% if is_sleeping %}
+      0
+    {% elif is_hot_day %}
+      {{ close_cover_to_position_number }}
+    {% elif is_cold_night %}
+      0
+    {% else %}
+      100
+    {% endif %}
+
+  # Calculate actual desired position (considering window state)
+  desired_position: >
+    {% if is_sleeping %}
+      {% if window_state == 'Open' %}
+        100
+      {% elif window_state == 'Tilted' %}
+        {{ close_cover_to_position_when_sleeping_and_tilted_number }}
+      {% else %}
+        0
+      {% endif %}
+    {% elif window_is_open %}
+      {% if is_hot_day or is_cold_night %}
+        {{ window_open_position_hot_or_cold }}
+      {% else %}
+        {{ window_open_position }}
+      {% endif %}
+    {% else %}
+      {{ target_position }}
+    {% endif %}
 
   # Manual override detection
   is_manual_override: >
@@ -229,16 +264,6 @@ variables:
       {% set still_in_override = (now_ts - cover_changed_ts) < override_seconds %}
       {{ was_manual and still_in_override }}
     {% endif %}
-
-  window_entity: !input window_entity
-  outside_temp_sensor: !input outside_temperature_sensor
-  indoor_temp_sensor: !input indoor_temperature_sensor
-  outside_temp_max: !input outside_temperature_max
-  outside_temp_min: !input outside_temperature_min
-  sun_elev_min: !input sun_elevation_min
-  sun_az_min: !input sun_azimuth_min
-  sun_az_max: !input sun_azimuth_max
-  sunshine_entity: !input sunshine_entity
 
 mode: single
 max_exceeded: silent
@@ -263,19 +288,25 @@ trigger:
     above: !input outside_temperature_max
     for:
       minutes: 10
-    id: temp_above_max
+    id: temp_hot
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
-    below: !input outside_temperature_min
+    below: !input outside_temperature_max
     for:
       minutes: 10
-    id: temp_below_min
+    id: temp_not_hot
   - platform: numeric_state
     entity_id: !input outside_temperature_sensor
-    below: 3
+    below: !input cold_temperature_threshold
     for:
       minutes: 10
-    id: temp_freezing
+    id: temp_cold
+  - platform: numeric_state
+    entity_id: !input outside_temperature_sensor
+    above: !input cold_temperature_threshold
+    for:
+      minutes: 10
+    id: temp_not_cold
   - platform: numeric_state
     entity_id: sun.sun
     attribute: azimuth
@@ -290,15 +321,20 @@ trigger:
     entity_id: sun.sun
     attribute: elevation
     above: !input sun_elevation_min
-    id: sun_high_enough
+    id: sun_high
   - platform: numeric_state
     entity_id: sun.sun
     attribute: elevation
     below: -10
-    id: sun_well_below_horizon
+    id: sun_below_horizon
+  - platform: numeric_state
+    entity_id: sun.sun
+    attribute: elevation
+    above: -10
+    id: sun_above_horizon
 
 condition:
-  # Global condition: respect manual overrides, but sleeping mode always takes priority
+  # Respect manual overrides, but sleeping mode always takes priority
   - condition: or
     conditions:
       - condition: template
@@ -307,342 +343,33 @@ condition:
         value_template: "{{ is_sleeping }}"
 
 action:
+  # Step 1: Update saved target position (only when window is closed and not in manual override)
   - choose:
-      # ============================================
-      # PRIORITY 1: Sleeping mode
-      # ============================================
       - conditions:
           - condition: template
-            value_template: "{{ is_sleeping }}"
+            value_template: "{{ not window_is_open and not is_manual_override }}"
         sequence:
-          - choose:
-              # Sleeping + Window Closed → Close cover fully
-              - conditions:
-                  - condition: state
-                    entity_id: !input window_entity
-                    state: "Closed"
-                sequence:
-                  - condition: numeric_state
-                    entity_id: !input room_cover
-                    attribute: current_position
-                    above: 0
-                  - condition: or
-                    conditions:
-                      - condition: template
-                        value_template: "{{ not use_additional_conditions_closing }}"
-                      - condition: and
-                        conditions: !input additional_conditions_closing
-                  - service: cover.close_cover
-                    target:
-                      entity_id: !input room_cover
-                  - delay:
-                      seconds: !input cover_state_delay
-                  - service: input_datetime.set_datetime
-                    target:
-                      entity_id: !input last_automation_change_helper
-                    data:
-                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+          - service: input_number.set_value
+            target:
+              entity_id: !input saved_position_helper
+            data:
+              value: "{{ target_position }}"
 
-              # Sleeping + Window Tilted → Partial close
-              - conditions:
-                  - condition: state
-                    entity_id: !input window_entity
-                    state: "Tilted"
-                sequence:
-                  - condition: template
-                    value_template: "{{ current_position != close_cover_to_position_when_sleeping_and_tilted_number }}"
-                  - condition: or
-                    conditions:
-                      - condition: template
-                        value_template: "{{ not use_additional_conditions_closing }}"
-                      - condition: and
-                        conditions: !input additional_conditions_closing
-                  - service: cover.set_cover_position
-                    target:
-                      entity_id: !input room_cover
-                    data:
-                      position: "{{ close_cover_to_position_when_sleeping_and_tilted_number }}"
-                  - delay:
-                      seconds: !input cover_state_delay
-                  - service: input_datetime.set_datetime
-                    target:
-                      entity_id: !input last_automation_change_helper
-                    data:
-                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+  # Step 2: Move cover to desired position if needed
+  - condition: template
+    value_template: "{{ current_position != desired_position | int }}"
 
-              # Sleeping + Window Open → Open cover
-              - conditions:
-                  - condition: state
-                    entity_id: !input window_entity
-                    state: "Open"
-                sequence:
-                  - condition: numeric_state
-                    entity_id: !input room_cover
-                    attribute: current_position
-                    below: 100
-                  - service: cover.open_cover
-                    target:
-                      entity_id: !input room_cover
-                  - delay:
-                      seconds: !input cover_state_delay
-                  - service: input_datetime.set_datetime
-                    target:
-                      entity_id: !input last_automation_change_helper
-                    data:
-                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+  - service: cover.set_cover_position
+    target:
+      entity_id: !input room_cover
+    data:
+      position: "{{ desired_position | int }}"
 
-      # ============================================
-      # PRIORITY 2: Hot sunny day
-      # ============================================
-      - conditions:
-          - condition: numeric_state
-            entity_id: sun.sun
-            attribute: elevation
-            above: !input sun_elevation_min
-          - condition: numeric_state
-            entity_id: sun.sun
-            attribute: azimuth
-            above: !input sun_azimuth_min
-          - condition: numeric_state
-            entity_id: sun.sun
-            attribute: azimuth
-            below: !input sun_azimuth_max
-          - condition: numeric_state
-            entity_id: !input outside_temperature_sensor
-            above: !input outside_temperature_max
-          - condition: state
-            entity_id: !input sunshine_entity
-            state: "on"
-          - condition: template
-            value_template: >
-              {{ states(outside_temp_sensor) | float(0) > 
-                 states(indoor_temp_sensor) | float(100) - 3 }}
-        sequence:
-          - choose:
-              # Window open/tilted during hot day → partial close
-              - conditions:
-                  - condition: or
-                    conditions:
-                      - condition: state
-                        entity_id: !input window_entity
-                        state: "Open"
-                      - condition: state
-                        entity_id: !input window_entity
-                        state: "Tilted"
-                sequence:
-                  - condition: template
-                    value_template: "{{ current_position != 55 }}"
-                  - condition: or
-                    conditions:
-                      - condition: template
-                        value_template: "{{ not use_additional_conditions_closing }}"
-                      - condition: and
-                        conditions: !input additional_conditions_closing
-                  - service: cover.set_cover_position
-                    target:
-                      entity_id: !input room_cover
-                    data:
-                      position: 55
-                  - delay:
-                      seconds: !input cover_state_delay
-                  - service: input_datetime.set_datetime
-                    target:
-                      entity_id: !input last_automation_change_helper
-                    data:
-                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+  - delay:
+      seconds: 5
 
-            # Window closed during hot day → close cover
-            default:
-              - condition: or
-                conditions:
-                  - condition: template
-                    value_template: "{{ not use_additional_conditions_closing }}"
-                  - condition: and
-                    conditions: !input additional_conditions_closing
-              - choose:
-                  - conditions:
-                      - condition: template
-                        value_template: "{{ close_cover_to_position }}"
-                    sequence:
-                      - condition: template
-                        value_template: "{{ current_position != close_cover_to_position_number }}"
-                      - service: cover.set_cover_position
-                        target:
-                          entity_id: !input room_cover
-                        data:
-                          position: "{{ close_cover_to_position_number }}"
-                      - delay:
-                          seconds: !input cover_state_delay
-                      - service: input_datetime.set_datetime
-                        target:
-                          entity_id: !input last_automation_change_helper
-                        data:
-                          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
-                default:
-                  - condition: template
-                    value_template: "{{ close_cover }}"
-                  - condition: numeric_state
-                    entity_id: !input room_cover
-                    attribute: current_position
-                    above: 0
-                  - service: cover.close_cover
-                    target:
-                      entity_id: !input room_cover
-                  - delay:
-                      seconds: !input cover_state_delay
-                  - service: input_datetime.set_datetime
-                    target:
-                      entity_id: !input last_automation_change_helper
-                    data:
-                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
-
-      # ============================================
-      # PRIORITY 3: Cold night
-      # ============================================
-      - conditions:
-          - condition: template
-            value_template: "{{ check_cold_outside }}"
-          - condition: numeric_state
-            entity_id: !input outside_temperature_sensor
-            below: 3
-          - condition: numeric_state
-            entity_id: sun.sun
-            attribute: elevation
-            below: -10
-        sequence:
-          - choose:
-              # Window open/tilted during cold night → partial close
-              - conditions:
-                  - condition: or
-                    conditions:
-                      - condition: state
-                        entity_id: !input window_entity
-                        state: "Open"
-                      - condition: state
-                        entity_id: !input window_entity
-                        state: "Tilted"
-                sequence:
-                  - condition: template
-                    value_template: "{{ current_position != 55 }}"
-                  - condition: or
-                    conditions:
-                      - condition: template
-                        value_template: "{{ not use_additional_conditions_closing }}"
-                      - condition: and
-                        conditions: !input additional_conditions_closing
-                  - service: cover.set_cover_position
-                    target:
-                      entity_id: !input room_cover
-                    data:
-                      position: 55
-                  - delay:
-                      seconds: !input cover_state_delay
-                  - service: input_datetime.set_datetime
-                    target:
-                      entity_id: !input last_automation_change_helper
-                    data:
-                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
-
-            default:
-              - condition: or
-                conditions:
-                  - condition: template
-                    value_template: "{{ not use_additional_conditions_closing }}"
-                  - condition: and
-                    conditions: !input additional_conditions_closing
-              - choose:
-                  - conditions:
-                      - condition: template
-                        value_template: "{{ close_cover_to_position }}"
-                    sequence:
-                      - condition: template
-                        value_template: "{{ current_position != close_cover_to_position_number }}"
-                      - service: cover.set_cover_position
-                        target:
-                          entity_id: !input room_cover
-                        data:
-                          position: "{{ close_cover_to_position_number }}"
-                      - delay:
-                          seconds: !input cover_state_delay
-                      - service: input_datetime.set_datetime
-                        target:
-                          entity_id: !input last_automation_change_helper
-                        data:
-                          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
-                default:
-                  - condition: template
-                    value_template: "{{ close_cover }}"
-                  - condition: numeric_state
-                    entity_id: !input room_cover
-                    attribute: current_position
-                    above: 0
-                  - service: cover.close_cover
-                    target:
-                      entity_id: !input room_cover
-                  - delay:
-                      seconds: !input cover_state_delay
-                  - service: input_datetime.set_datetime
-                    target:
-                      entity_id: !input last_automation_change_helper
-                    data:
-                      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
-
-    # ============================================
-    # DEFAULT: Open cover
-    # ============================================
-    default:
-      - condition: template
-        value_template: "{{ not is_sleeping }}"
-
-      - condition: numeric_state
-        entity_id: !input room_cover
-        attribute: current_position
-        below: 100
-
-      - condition: or
-        conditions:
-          - condition: or
-            conditions:
-              - condition: state
-                entity_id: !input window_entity
-                state: "Open"
-              - condition: state
-                entity_id: !input window_entity
-                state: "Tilted"
-
-          - condition: and
-            conditions:
-              - condition: numeric_state
-                entity_id: !input outside_temperature_sensor
-                below: !input outside_temperature_min
-              - condition: or
-                conditions:
-                  - condition: numeric_state
-                    entity_id: sun.sun
-                    attribute: azimuth
-                    above: !input sun_azimuth_max
-                  - condition: numeric_state
-                    entity_id: sun.sun
-                    attribute: azimuth
-                    below: !input sun_azimuth_min
-                  - condition: state
-                    entity_id: !input sunshine_entity
-                    state: "off"
-
-      - condition: or
-        conditions:
-          - condition: template
-            value_template: "{{ not use_additional_conditions_opening }}"
-          - condition: and
-            conditions: !input additional_conditions_opening
-
-      - service: cover.open_cover
-        target:
-          entity_id: !input room_cover
-      - delay:
-          seconds: !input cover_state_delay
-      - service: input_datetime.set_datetime
-        target:
-          entity_id: !input last_automation_change_helper
-        data:
-          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+  - service: input_datetime.set_datetime
+    target:
+      entity_id: !input last_automation_change_helper
+    data:
+      datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
