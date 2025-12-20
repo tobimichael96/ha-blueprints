@@ -1,4 +1,4 @@
- blueprint:
+blueprint:
   name: Smart Cover Control
   description: Automatically control cover based on window state, temperature, and sleeping mode. Calculates target position and restores when window closes.
   domain: automation
