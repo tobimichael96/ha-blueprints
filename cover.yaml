@@ -225,7 +225,7 @@ variables:
     {% elif is_hot_day %}
       {{ close_cover_to_position_number }}
     {% elif is_cold_night %}
-      0
+      {{ close_cover_to_position_number }}
     {% else %}
       100
     {% endif %}
