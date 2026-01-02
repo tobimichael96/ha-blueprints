@@ -119,8 +119,8 @@ blueprint:
           max: 360
           unit_of_measurement: "°"
     close_cover_to_position_number:
-      name: Hot Day Cover Position
-      description: Cover position during hot sunny day (0 = closed, 100 = open)
+      name: Hot Day / Cold Night Cover Position
+      description: Cover position during hot sunny day or cold night (0 = closed, 100 = open)
       default: 10
       selector:
         number:
@@ -206,7 +206,6 @@ variables:
   window_is_open: "{{ window_state in ['Open', 'Tilted'] }}"
   is_sleeping: "{{ is_state(sleeping_entity, 'on') and check_sleeping }}"
 
-  # Condition checks
   is_hot_day: >
     {{ state_attr('sun.sun', 'elevation') | float(0) > sun_elev_min | float
        and state_attr('sun.sun', 'azimuth') | float(0) > sun_az_min | float
@@ -220,7 +219,6 @@ variables:
        and states(outside_temp_sensor) | float(0) < cold_temperature_threshold | float
        and state_attr('sun.sun', 'elevation') | float(0) < -10 }}
 
-  # Calculate target position (what cover should be when window is closed)
   target_position: >
     {% if is_sleeping %}
       0
@@ -232,7 +230,6 @@ variables:
       100
     {% endif %}
 
-  # Calculate actual desired position (considering window state)
   desired_position: >
     {% if is_sleeping %}
       {% if window_state == 'Open' %}
@@ -252,12 +249,9 @@ variables:
       {{ target_position }}
     {% endif %}
 
-  # Manual override detection
   is_manual_override: >
     {% set last_auto_state = states(last_automation_change_helper) %}
     {% if last_auto_state in ['unknown', 'unavailable', 'None', ''] %}
-      false
-    {% elif trigger is defined and trigger.id == 'window_changed' %}
       false
     {% else %}
       {% set last_auto_ts = as_timestamp(last_auto_state, default=0) %}
@@ -338,13 +332,15 @@ trigger:
     id: sun_above_horizon
 
 condition:
-  # Respect manual overrides, but sleeping mode always takes priority
+  # Respect manual overrides, but sleeping mode and window changes always take priority
   - condition: or
     conditions:
       - condition: template
         value_template: "{{ not is_manual_override }}"
       - condition: template
         value_template: "{{ is_sleeping }}"
+      - condition: trigger
+        id: window_changed
 
 action:
   # Step 1: Update saved target position (only when window is closed and not in manual override)
@@ -370,7 +366,7 @@ action:
       position: "{{ desired_position | int }}"
 
   - delay:
-      seconds: 2
+      seconds: 5
 
   - service: input_datetime.set_datetime
     target:
