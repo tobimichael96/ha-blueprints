@@ -1,6 +1,6 @@
 blueprint:
   name: Smart Cover Control
-  description: Automatically control cover based on window state, temperature, and sleeping mode. Calculates target position and restores when window closes.
+  description: Automatically control cover based on desired position sensor.
   domain: automation
   input:
     room_cover:
@@ -9,21 +9,13 @@ blueprint:
         entity:
           filter:
             - domain: cover
-    window_entity:
-      name: Window Entity
+    desired_position_sensor:
+      name: Desired Position Sensor
+      description: Template sensor that calculates the desired cover position
       selector:
         entity:
           filter:
-            - domain: input_select
-    window_entity_time:
-      name: Window State Delay
-      description: How long window must be in new state before triggering (seconds)
-      default: 1
-      selector:
-        number:
-          min: 0
-          max: 120
-          mode: box
+            - domain: sensor
     saved_position_helper:
       name: Target Position Helper
       description: input_number helper to store target cover position (create one per cover)
@@ -38,128 +30,6 @@ blueprint:
         entity:
           filter:
             - domain: input_datetime
-    sleeping_entity:
-      name: Sleeping Entity
-      description: Sleeping entity to monitor
-      default: "input_boolean.sleeping"
-      selector:
-        entity:
-          filter:
-            - domain: input_boolean
-    check_sleeping:
-      name: Check sleeping
-      description: Whether to react to sleeping state
-      default: true
-      selector:
-        boolean:
-    close_cover_to_position_when_sleeping_and_tilted_number:
-      name: Cover position when sleeping and tilted
-      description: Position when window is tilted and sleeping mode is on
-      default: 0
-      selector:
-        number:
-          min: 0
-          max: 100
-          mode: box
-    outside_temperature_sensor:
-      name: Outside Temperature Sensor
-      selector:
-        entity:
-          filter:
-            - domain: sensor
-      default: "sensor.outdoor_temperature"
-    indoor_temperature_sensor:
-      name: Indoor Temperature Sensor
-      selector:
-        entity:
-          filter:
-            - domain: sensor
-      default: "sensor.indoor_temperature"
-    sunshine_entity:
-      name: Sunshine Entity
-      selector:
-        entity:
-          filter:
-            - domain: binary_sensor
-      default: "binary_sensor.sunshine"
-    outside_temperature_max:
-      name: Hot Day Temperature (°C)
-      description: Temperature above which hot day logic activates
-      default: 22
-      selector:
-        number:
-          min: 0
-          max: 40
-          unit_of_measurement: "°C"
-    sun_elevation_min:
-      name: Minimum Sun Elevation (°)
-      description: Minimum sun elevation for hot day conditions
-      default: 15
-      selector:
-        number:
-          min: 0
-          max: 90
-          unit_of_measurement: "°"
-    sun_azimuth_min:
-      name: Minimum Sun Azimuth (°)
-      description: Sun azimuth when sun starts hitting windows
-      default: 150
-      selector:
-        number:
-          min: 0
-          max: 360
-          unit_of_measurement: "°"
-    sun_azimuth_max:
-      name: Maximum Sun Azimuth (°)
-      description: Sun azimuth when sun stops hitting windows
-      default: 240
-      selector:
-        number:
-          min: 0
-          max: 360
-          unit_of_measurement: "°"
-    close_cover_to_position_number:
-      name: Hot Day / Cold Night Cover Position
-      description: Cover position during hot sunny day or cold night (0 = closed, 100 = open)
-      default: 10
-      selector:
-        number:
-          min: 0
-          max: 100
-          mode: box
-    check_cold_outside:
-      name: Check cold nights
-      description: Whether to close cover on cold nights
-      default: false
-      selector:
-        boolean:
-    cold_temperature_threshold:
-      name: Cold Night Temperature (°C)
-      description: Temperature below which cold night logic activates
-      default: 3
-      selector:
-        number:
-          min: -10
-          max: 15
-          unit_of_measurement: "°C"
-    window_open_position:
-      name: Window Open Position
-      description: Cover position when window is fully open (normal conditions)
-      default: 100
-      selector:
-        number:
-          min: 0
-          max: 100
-          mode: box
-    window_open_position_hot_or_cold:
-      name: Window Open Position (Hot/Cold)
-      description: Cover position when window is open during hot day or cold night (partial shade)
-      default: 55
-      selector:
-        number:
-          min: 0
-          max: 100
-          mode: box
     manual_override_duration:
       name: Manual Override Duration (minutes)
       description: How long to respect manual changes before automation resumes
@@ -169,6 +39,15 @@ blueprint:
           min: 5
           max: 480
           unit_of_measurement: "min"
+    desired_position_delay:
+      name: Desired Position Delay (seconds)
+      description: How long the desired position must be stable before triggering
+      default: 5
+      selector:
+        number:
+          min: 0
+          max: 120
+          unit_of_measurement: "s"
     additional_trigger:
       name: Additional triggers
       description: Additional triggers for the automation
@@ -180,74 +59,13 @@ blueprint:
 
 variables:
   room_cover: !input room_cover
-  window_entity: !input window_entity
+  desired_position_sensor: !input desired_position_sensor
   saved_position_helper: !input saved_position_helper
   last_automation_change_helper: !input last_automation_change_helper
-  sleeping_entity: !input sleeping_entity
-  check_sleeping: !input check_sleeping
-  close_cover_to_position_when_sleeping_and_tilted_number: !input close_cover_to_position_when_sleeping_and_tilted_number
-  outside_temp_sensor: !input outside_temperature_sensor
-  indoor_temp_sensor: !input indoor_temperature_sensor
-  sunshine_entity: !input sunshine_entity
-  outside_temp_max: !input outside_temperature_max
-  sun_elev_min: !input sun_elevation_min
-  sun_az_min: !input sun_azimuth_min
-  sun_az_max: !input sun_azimuth_max
-  close_cover_to_position_number: !input close_cover_to_position_number
-  check_cold_outside: !input check_cold_outside
-  cold_temperature_threshold: !input cold_temperature_threshold
-  window_open_position: !input window_open_position
-  window_open_position_hot_or_cold: !input window_open_position_hot_or_cold
   manual_override_duration: !input manual_override_duration
 
   current_position: "{{ state_attr(room_cover, 'current_position') | int(0) }}"
-  saved_position: "{{ states(saved_position_helper) | int(100) }}"
-  window_state: "{{ states(window_entity) }}"
-  window_is_open: "{{ window_state in ['Open', 'Tilted'] }}"
-  is_sleeping: "{{ is_state(sleeping_entity, 'on') and check_sleeping }}"
-
-  is_hot_day: >
-    {{ state_attr('sun.sun', 'elevation') | float(0) > sun_elev_min | float
-       and state_attr('sun.sun', 'azimuth') | float(0) > sun_az_min | float
-       and state_attr('sun.sun', 'azimuth') | float(0) < sun_az_max | float
-       and states(outside_temp_sensor) | float(0) > outside_temp_max | float
-       and is_state(sunshine_entity, 'on')
-       and states(outside_temp_sensor) | float(0) > (states(indoor_temp_sensor) | float(100) - 3) }}
-
-  is_cold_night: >
-    {{ check_cold_outside
-       and states(outside_temp_sensor) | float(0) < cold_temperature_threshold | float
-       and state_attr('sun.sun', 'elevation') | float(0) < -10 }}
-
-  target_position: >
-    {% if is_sleeping %}
-      0
-    {% elif is_hot_day %}
-      {{ close_cover_to_position_number }}
-    {% elif is_cold_night %}
-      {{ close_cover_to_position_number }}
-    {% else %}
-      100
-    {% endif %}
-
-  desired_position: >
-    {% if is_sleeping %}
-      {% if window_state == 'Open' %}
-        100
-      {% elif window_state == 'Tilted' %}
-        {{ close_cover_to_position_when_sleeping_and_tilted_number }}
-      {% else %}
-        0
-      {% endif %}
-    {% elif window_is_open %}
-      {% if is_hot_day or is_cold_night %}
-        {{ window_open_position_hot_or_cold }}
-      {% else %}
-        {{ window_open_position }}
-      {% endif %}
-    {% else %}
-      {{ target_position }}
-    {% endif %}
+  desired_position: "{{ states(desired_position_sensor) | int(100) }}"
 
   is_manual_override: >
     {% set last_auto_state = states(last_automation_change_helper) %}
@@ -269,101 +87,37 @@ max_exceeded: silent
 trigger:
   - triggers: !input additional_trigger
   - platform: state
-    entity_id: !input window_entity
+    entity_id: !input desired_position_sensor
     for:
-      seconds: !input window_entity_time
-    id: window_changed
-  - platform: state
-    entity_id: !input sleeping_entity
-    id: sleeping_changed
-  - platform: state
-    entity_id: !input sunshine_entity
-    for:
-      minutes: 5
-    id: sunshine_changed
-  - platform: numeric_state
-    entity_id: !input outside_temperature_sensor
-    above: !input outside_temperature_max
-    for:
-      minutes: 10
-    id: temp_hot
-  - platform: numeric_state
-    entity_id: !input outside_temperature_sensor
-    below: !input outside_temperature_max
-    for:
-      minutes: 10
-    id: temp_not_hot
-  - platform: numeric_state
-    entity_id: !input outside_temperature_sensor
-    below: !input cold_temperature_threshold
-    for:
-      minutes: 10
-    id: temp_cold
-  - platform: numeric_state
-    entity_id: !input outside_temperature_sensor
-    above: !input cold_temperature_threshold
-    for:
-      minutes: 10
-    id: temp_not_cold
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: azimuth
-    above: !input sun_azimuth_min
-    id: sun_enters_window
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: azimuth
-    above: !input sun_azimuth_max
-    id: sun_leaves_window
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: elevation
-    above: !input sun_elevation_min
-    id: sun_high
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: elevation
-    below: -10
-    id: sun_below_horizon
-  - platform: numeric_state
-    entity_id: sun.sun
-    attribute: elevation
-    above: -10
-    id: sun_above_horizon
+      seconds: !input desired_position_delay
+    id: desired_position_changed
 
 condition:
-  # Respect manual overrides, but sleeping mode and window changes always take priority
-  - condition: or
-    conditions:
-      - condition: template
-        value_template: "{{ not is_manual_override }}"
-      - condition: template
-        value_template: "{{ is_sleeping }}"
-      - condition: trigger
-        id: window_changed
+  - condition: template
+    value_template: "{{ not is_manual_override }}"
 
 action:
-  # Step 1: Update saved target position (only when window is closed and not in manual override)
+  # Step 1: Update saved target position (only when not in manual override)
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ not window_is_open and not is_manual_override }}"
+            value_template: "{{ not is_manual_override }}"
         sequence:
           - service: input_number.set_value
             target:
               entity_id: !input saved_position_helper
             data:
-              value: "{{ target_position }}"
+              value: "{{ desired_position }}"
 
   # Step 2: Move cover to desired position if needed
   - condition: template
-    value_template: "{{ current_position != desired_position | int }}"
+    value_template: "{{ current_position != desired_position }}"
 
   - service: cover.set_cover_position
     target:
       entity_id: !input room_cover
     data:
-      position: "{{ desired_position | int }}"
+      position: "{{ desired_position }}"
 
   - delay:
       seconds: 5
