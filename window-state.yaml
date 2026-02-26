@@ -24,6 +24,25 @@ blueprint:
         entity:
           filter:
             - domain: input_select
+    actions_open:
+      name: Actions Open
+      description: Actions which should run when the window is opened.
+      default: [ ]
+      selector:
+        action:
+    actions_tilted:
+      name: Actions Tilted
+      description: Actions which should run when the window is tilted.
+      default: [ ]
+      selector:
+        action:
+    actions_closed:
+      name: Actions Closed
+      description: Actions which should run when the window is closed.
+      default: [ ]
+      selector:
+        action:
+
 
 mode: queued
 max: 5
@@ -66,6 +85,7 @@ actions:
         target:
           entity_id: !input window_entity
         action: input_select.select_option
+      - sequence: actions_tilted
   - if:
       - condition: or
         conditions:
@@ -85,6 +105,7 @@ actions:
         target:
           entity_id: !input window_entity
         action: input_select.select_option
+      - sequence: !input actions_tilted
   - if:
       - condition: state
         entity_id: !input lower_door_sensor
@@ -98,3 +119,4 @@ actions:
         target:
           entity_id: !input window_entity
         action: input_select.select_option
+      - sequence: !input actions_tilted
