@@ -65,7 +65,13 @@ variables:
   manual_override_duration: !input manual_override_duration
 
   current_position: "{{ state_attr(room_cover, 'current_position') | int(0) }}"
-  desired_position: "{{ states(desired_position_sensor) | int(100) }}"
+  desired_position: >
+    {% set val = states(desired_position_sensor) %}
+    {% if val in ['unknown', 'unavailable', 'None', ''] %}
+      {{ current_position }}
+    {% else %}
+      {{ val | int(current_position) }}
+    {% endif %}
 
   is_manual_override: >
     {% set last_auto_state = states(last_automation_change_helper) %}
@@ -73,7 +79,7 @@ variables:
       false
     {% else %}
       {% set last_auto_ts = as_timestamp(last_auto_state, default=0) %}
-      {% set cover_changed_ts = as_timestamp(states[room_cover].last_changed, default=0) %}
+      {% set cover_changed_ts = as_timestamp(states[room_cover].last_updated, default=0) %}
       {% set override_seconds = manual_override_duration * 60 %}
       {% set now_ts = now().timestamp() %}
       {% set was_manual = cover_changed_ts > (last_auto_ts + 60) %}
@@ -81,7 +87,7 @@ variables:
       {{ was_manual and still_in_override }}
     {% endif %}
 
-mode: single
+mode: restart
 max_exceeded: silent
 
 trigger:
@@ -97,33 +103,25 @@ condition:
     value_template: "{{ not is_manual_override }}"
 
 action:
-  # Step 1: Update saved target position (only when not in manual override)
-  - choose:
-      - conditions:
-          - condition: template
-            value_template: "{{ not is_manual_override }}"
-        sequence:
-          - service: input_number.set_value
-            target:
-              entity_id: !input saved_position_helper
-            data:
-              value: "{{ desired_position }}"
+  # Update saved target position
+  - service: input_number.set_value
+    target:
+      entity_id: !input saved_position_helper
+    data:
+      value: "{{ desired_position }}"
 
-  # Step 2: Move cover to desired position if needed
+  # Skip if cover is already at the desired position
   - condition: template
     value_template: "{{ current_position != desired_position }}"
-
-  - service: cover.set_cover_position
-    target:
-      entity_id: !input room_cover
-    data:
-      position: "{{ desired_position }}"
-
-  - delay:
-      seconds: 5
 
   - service: input_datetime.set_datetime
     target:
       entity_id: !input last_automation_change_helper
     data:
       datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
+
+  - service: cover.set_cover_position
+    target:
+      entity_id: !input room_cover
+    data:
+      position: "{{ desired_position }}"
