@@ -30,6 +30,16 @@ blueprint:
         entity:
           filter:
             - domain: input_datetime
+    presence_sensor:
+      name: Presence Sensor
+      description: >
+        Optional. If the room is occupied when the cover should open, opening
+        is delayed until the room clears or 1 hour has passed.
+      default:
+      selector:
+        entity:
+          filter:
+            - domain: binary_sensor
     manual_override_duration:
       name: Manual Override Duration (minutes)
       description: How long to respect manual changes before automation resumes
@@ -63,6 +73,7 @@ variables:
   saved_position_helper: !input saved_position_helper
   last_automation_change_helper: !input last_automation_change_helper
   manual_override_duration: !input manual_override_duration
+  presence_sensor: !input presence_sensor
 
   current_position: "{{ state_attr(room_cover, 'current_position') | int(0) }}"
   desired_position: >
@@ -113,6 +124,21 @@ action:
   # Skip if cover is already at the desired position
   - condition: template
     value_template: "{{ current_position != desired_position }}"
+
+  # If opening and room is occupied, wait for it to clear (max 1 hour)
+  - if:
+      - condition: template
+        value_template: >
+          {{ desired_position > current_position
+             and presence_sensor is not none
+             and presence_sensor | string not in ['', 'None']
+             and is_state(presence_sensor, 'on') }}
+    then:
+      - wait_for_trigger:
+          - platform: template
+            value_template: "{{ not is_state(presence_sensor | default(''), 'on') }}"
+        timeout: "01:00:00"
+        continue_on_timeout: true
 
   - service: input_datetime.set_datetime
     target:
