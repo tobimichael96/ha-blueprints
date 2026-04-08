@@ -40,6 +40,16 @@ blueprint:
         entity:
           filter:
             - domain: binary_sensor
+    window_entity:
+      name: Window Entity
+      description: >
+        Optional. If the window is open or tilted, the presence wait is skipped
+        and the cover opens immediately.
+      default:
+      selector:
+        entity:
+          filter:
+            - domain: input_select
     manual_override_duration:
       name: Manual Override Duration (minutes)
       description: How long to respect manual changes before automation resumes
@@ -74,6 +84,7 @@ variables:
   last_automation_change_helper: !input last_automation_change_helper
   manual_override_duration: !input manual_override_duration
   presence_sensor: !input presence_sensor
+  window_entity: !input window_entity
 
   current_position: "{{ state_attr(room_cover, 'current_position') | int(0) }}"
   desired_position: >
@@ -132,7 +143,10 @@ action:
           {{ desired_position > current_position
              and presence_sensor is not none
              and presence_sensor | string not in ['', 'None']
-             and is_state(presence_sensor, 'on') }}
+             and is_state(presence_sensor, 'on')
+             and not (window_entity is not none
+                      and window_entity | string not in ['', 'None']
+                      and states(window_entity) in ['Open', 'Tilted']) }}
     then:
       - wait_for_trigger:
           - platform: template
