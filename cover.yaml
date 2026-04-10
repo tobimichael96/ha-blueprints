@@ -119,12 +119,10 @@ trigger:
     for:
       seconds: !input desired_position_delay
     id: desired_position_changed
-  - platform: template
-    value_template: >
-      {% set last_auto_ts = as_timestamp(states('!input last_automation_change_helper'), default=0) %}
-      {% set cover_changed_ts = as_timestamp(states['!input room_cover'].last_changed, default=0) %}
-      {% set override_secs = (!input manual_override_duration) * 60 %}
-      {{ cover_changed_ts > (last_auto_ts + 60) and (now().timestamp() - cover_changed_ts) >= override_secs }}
+  - platform: state
+    entity_id: !input room_cover
+    for:
+      minutes: !input manual_override_duration
     id: override_expired
 
 condition:
