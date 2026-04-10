@@ -101,7 +101,7 @@ variables:
       false
     {% else %}
       {% set last_auto_ts = as_timestamp(last_auto_state, default=0) %}
-      {% set cover_changed_ts = as_timestamp(states[room_cover].last_updated, default=0) %}
+      {% set cover_changed_ts = as_timestamp(states[room_cover].last_changed, default=0) %}
       {% set override_seconds = manual_override_duration * 60 %}
       {% set now_ts = now().timestamp() %}
       {% set was_manual = cover_changed_ts > (last_auto_ts + 60) %}
