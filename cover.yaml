@@ -68,6 +68,15 @@ blueprint:
           min: 0
           max: 120
           unit_of_measurement: "s"
+    presence_clear_delay:
+      name: Presence Clear Delay (seconds)
+      description: How long the room must be unoccupied before opening proceeds
+      default: 180
+      selector:
+        number:
+          min: 0
+          max: 1800
+          unit_of_measurement: "s"
     additional_trigger:
       name: Additional triggers
       description: Additional triggers for the automation
@@ -156,6 +165,8 @@ action:
       - wait_for_trigger:
           - platform: template
             value_template: "{{ not is_state(presence_sensor | default(''), 'on') }}"
+            for:
+              seconds: !input presence_clear_delay
         timeout: "01:00:00"
         continue_on_timeout: true
 
