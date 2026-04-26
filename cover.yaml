@@ -133,6 +133,12 @@ trigger:
     for:
       minutes: !input manual_override_duration
     id: override_expired
+  - platform: state
+    entity_id: !input window_entity
+    to:
+      - "Open"
+      - "Tilted"
+    id: window_opened
 
 condition:
   - condition: template
