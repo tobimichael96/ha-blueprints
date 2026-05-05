@@ -77,6 +77,15 @@ blueprint:
           min: 0
           max: 1800
           unit_of_measurement: "s"
+    presence_wait_timeout:
+      name: Presence Wait Timeout (minutes)
+      description: Maximum time to wait for the room to clear before opening anyway
+      default: 30
+      selector:
+        number:
+          min: 1
+          max: 120
+          unit_of_measurement: "min"
     additional_trigger:
       name: Additional triggers
       description: Additional triggers for the automation
@@ -156,7 +165,9 @@ action:
   - condition: template
     value_template: "{{ current_position != desired_position }}"
 
-  # If opening and room is occupied, wait for it to clear (max 1 hour)
+  # If opening and room is occupied, wait for it to clear (max presence_wait_timeout)
+  - variables:
+      presence_wait_timeout: !input presence_wait_timeout
   - if:
       - condition: template
         value_template: >
@@ -173,7 +184,8 @@ action:
             value_template: "{{ not is_state(presence_sensor | default(''), 'on') }}"
             for:
               seconds: !input presence_clear_delay
-        timeout: "01:00:00"
+        timeout:
+          minutes: "{{ presence_wait_timeout }}"
         continue_on_timeout: true
 
   - service: input_datetime.set_datetime
