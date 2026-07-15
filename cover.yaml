@@ -43,8 +43,12 @@ blueprint:
     window_entity:
       name: Window Entity
       description: >
-        Optional. If the window is open or tilted, the presence wait is skipped
-        and the cover opens immediately.
+        Optional. If you have just opened or tilted the window, the presence
+        wait is skipped and the cover reacts immediately. If the window was
+        already open/tilted from before (e.g. left tilted overnight) and the
+        cover opens for another reason such as sleeping mode ending, the
+        presence wait still applies so the cover doesn't shoot up while the
+        room is still occupied.
       default:
       selector:
         entity:
@@ -177,7 +181,8 @@ action:
              and is_state(presence_sensor, 'on')
              and not (window_entity is not none
                       and window_entity | string not in ['', 'None']
-                      and states(window_entity) in ['Open', 'Tilted']) }}
+                      and states(window_entity) in ['Open', 'Tilted']
+                      and (now() - states[window_entity].last_changed).total_seconds() < 60) }}
     then:
       - wait_for_trigger:
           - platform: template
