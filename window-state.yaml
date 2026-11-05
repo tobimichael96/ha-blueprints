@@ -77,8 +77,20 @@ triggers:
 
 actions:
   - if:
-      - condition: trigger
-        id: window_closed
+      - condition: or
+        conditions:
+          - condition: trigger
+            id: window_closed
+          # Both sensors off = closed, whichever reported last. The upper sensor's
+          # report can arrive late or get lost, so window_closed alone can miss it.
+          - condition: and
+            conditions:
+              - condition: state
+                entity_id: !input upper_door_sensor
+                state: "off"
+              - condition: state
+                entity_id: !input lower_door_sensor
+                state: "off"
     then:
       - data:
           option: Closed
